@@ -32,8 +32,14 @@ export default function MindMapNodeCard({
   const [pos, setPos] = useState({ x: node.x, y: node.y })
   const posRef = useRef(pos)
 
-  const borderColor = node.color || '#505068'
-  const dotColor = borderColor
+  // Resolve node color — node.color stores a key like 'blue' or a hex like '#2563eb'
+  const colorEntry = NODE_COLORS.find(c => c.key === node.color || c.border === node.color || c.bg === node.color)
+  const hasCustomColor = !!colorEntry
+  const nodeBg = hasCustomColor ? colorEntry.bg : 'var(--panel-bg)'
+  const nodeBorder = hasCustomColor ? colorEntry.border : (node.color || '#505068')
+  const nodeTextColor = hasCustomColor ? textColorFor(colorEntry.bg) : 'var(--modal-title)'
+  const nodeDescColor = hasCustomColor ? (textColorFor(colorEntry.bg) === 'rgba(0,0,0,.85)' ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)') : 'var(--node-desc)'
+  const dotColor = hasCustomColor ? 'rgba(255,255,255,.3)' : nodeBorder
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -96,8 +102,8 @@ export default function MindMapNodeCard({
         left: pos.x,
         top: pos.y,
         width: NODE_W,
-        background: 'var(--panel-bg)',
-        border: `1.5px solid ${borderColor}`,
+        background: nodeBg,
+        border: `1.5px solid ${nodeBorder}`,
         borderRadius: 10,
         padding: '12px 14px',
         cursor: 'grab',
@@ -128,7 +134,7 @@ export default function MindMapNodeCard({
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: 'var(--modal-title)',
+            color: nodeTextColor,
             flex: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -150,12 +156,13 @@ export default function MindMapNodeCard({
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--btn-c)',
+              color: hasCustomColor ? nodeTextColor : 'var(--btn-c)',
               cursor: 'pointer',
               fontSize: 16,
               lineHeight: 1,
               padding: '0 2px',
               flexShrink: 0,
+              opacity: 0.6,
             }}
           >
             &#x22EF;
@@ -168,7 +175,7 @@ export default function MindMapNodeCard({
         <div
           style={{
             fontSize: 11,
-            color: 'var(--node-desc)',
+            color: nodeDescColor,
             lineHeight: 1.4,
             marginBottom: 4,
             overflow: 'hidden',
@@ -187,8 +194,8 @@ export default function MindMapNodeCard({
         <div
           style={{
             fontSize: 10,
-            color: 'var(--accent)',
-            borderTop: '1px solid var(--node-link-border)',
+            color: hasCustomColor ? nodeDescColor : 'var(--accent)',
+            borderTop: `1px solid ${hasCustomColor ? 'rgba(255,255,255,.15)' : 'var(--node-link-border)'}`,
             paddingTop: 6,
             marginTop: 4,
             overflow: 'hidden',
@@ -290,7 +297,7 @@ export default function MindMapNodeCard({
               key={c.key}
               onClick={e => {
                 e.stopPropagation()
-                onColorChange(node.id, c.border)
+                onColorChange(node.id, c.key)
                 setColorPickerOpen(false)
               }}
               style={{
@@ -298,7 +305,7 @@ export default function MindMapNodeCard({
                 height: 28,
                 borderRadius: 8,
                 background: c.bg,
-                border: node.color === c.border ? `2px solid ${textColorFor(c.bg)}` : '2px solid transparent',
+                border: (node.color === c.key || node.color === c.border) ? `2px solid ${textColorFor(c.bg)}` : '2px solid transparent',
                 cursor: 'pointer',
                 padding: 0,
               }}
