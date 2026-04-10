@@ -11,6 +11,7 @@ interface MindMapNodeProps {
   onColorChange: (id: string, color: string) => void
   onAddChild: (parentId: string) => void
   onDelete: (id: string) => void
+  onOpen: (node: NodeType) => void
 }
 
 const NODE_W = 220
@@ -22,6 +23,7 @@ export default function MindMapNodeCard({
   onColorChange,
   onAddChild,
   onDelete,
+  onOpen,
 }: MindMapNodeProps) {
   const [hovered, setHovered] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -256,7 +258,7 @@ export default function MindMapNodeCard({
             style={actionBtnStyle}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--btn-hover-bg)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            onClick={e => { e.stopPropagation(); setMenuOpen(false) }}
+            onClick={e => { e.stopPropagation(); setMenuOpen(false); onOpen(node) }}
           >
             Open
           </button>

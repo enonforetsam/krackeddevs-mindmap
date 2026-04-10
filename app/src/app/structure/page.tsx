@@ -5,6 +5,7 @@ import Canvas from '@/components/canvas/Canvas'
 import EdgeLayer from '@/components/structure/EdgeLayer'
 import MindMapNodeCard from '@/components/structure/MindMapNode'
 import EditModal from '@/components/structure/EditModal'
+import NodeCanvas from '@/components/structure/NodeCanvas'
 import { supabase } from '@/lib/supabase'
 import type { MindMapNode, Edge } from '@/lib/types'
 
@@ -12,6 +13,7 @@ export default function StructurePage() {
   const [nodes, setNodes] = useState<MindMapNode[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [editingNode, setEditingNode] = useState<MindMapNode | null>(null)
+  const [openNode, setOpenNode] = useState<MindMapNode | null>(null)
 
   // Fetch data on mount
   useEffect(() => {
@@ -103,6 +105,7 @@ export default function StructurePage() {
             onColorChange={handleColorChange}
             onAddChild={handleAddChild}
             onDelete={handleDelete}
+            onOpen={setOpenNode}
           />
         ))}
       </Canvas>
@@ -112,6 +115,13 @@ export default function StructurePage() {
           node={editingNode}
           onSave={handleEditSave}
           onClose={() => setEditingNode(null)}
+        />
+      )}
+
+      {openNode && (
+        <NodeCanvas
+          node={openNode}
+          onClose={() => setOpenNode(null)}
         />
       )}
     </div>
