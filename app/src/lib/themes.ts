@@ -128,6 +128,29 @@ export const NODE_COLORS = [
   { key: 'dark', bg: '#1f2937', border: '#111827' },
 ]
 
+const DEPT_COLORS: Record<string, string> = {
+  engineering: '#3b82f6',
+  design: '#ec4899',
+  product: '#8b5cf6',
+  marketing: '#f59e0b',
+  operations: '#14b8a6',
+  finance: '#22c55e',
+  hr: '#ef4444',
+  legal: '#6b7280',
+  research: '#e0a840',
+  community: '#a07ae0',
+}
+
+export function colorOf(dept: string): string {
+  const key = (dept || '').toLowerCase().trim()
+  if (DEPT_COLORS[key]) return DEPT_COLORS[key]
+  // hash-based fallback
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h)
+  const palette = Object.values(DEPT_COLORS)
+  return palette[Math.abs(h) % palette.length]
+}
+
 export function textColorFor(hex: string): string {
   const c = hex.replace('#', '')
   const r = parseInt(c.substr(0, 2), 16)

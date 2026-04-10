@@ -3,3093 +3,850 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KrackedDevs Mind Map</title>
+<title>Malaysia News</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 *{box-sizing:border-box;margin:0;padding:0}
 
-/* ── CSS vars ── */
 :root{
-  --font:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
-  --mono:'SF Mono','Fira Code','Courier New',monospace;
-  --bg:#101014;
-  --grid-c:rgba(255,255,255,.03);
-  --scan-c:transparent;
-  --panel-bg:rgba(20,20,26,.92);
+  --bg:#0a0a0f;
+  --panel-bg:#111118;
   --panel-border:rgba(255,255,255,.06);
-  --panel-glow:transparent;
-  --btn-c:rgba(255,255,255,.5);
-  --btn-border:rgba(255,255,255,.08);
-  --btn-hover-bg:rgba(255,255,255,.05);
-  --btn-hover-border:rgba(255,255,255,.15);
-  --btn-hover-c:rgba(255,255,255,.85);
-  --accent:#6c8aff;
-  --brand-c:rgba(255,255,255,.2);
-  --hud-c:rgba(255,255,255,.25);
-  --hud-val:rgba(255,255,255,.55);
-  --modal-bg:rgba(18,18,24,.98);
-  --modal-border:rgba(255,255,255,.08);
-  --modal-title:rgba(255,255,255,.9);
-  --modal-label:rgba(255,255,255,.3);
-  --modal-text:rgba(255,255,255,.7);
-  --input-bg:rgba(255,255,255,.03);
-  --input-border:rgba(255,255,255,.07);
-  --input-c:rgba(255,255,255,.8);
-  --input-focus-border:rgba(108,138,255,.5);
-  --input-focus-bg:rgba(108,138,255,.04);
-  --node-desc:rgba(255,255,255,.4);
-  --node-link-border:rgba(255,255,255,.05);
-  --node-hover-shadow:0 2px 16px rgba(0,0,0,.4);
-  --cancel-c:rgba(255,255,255,.3);
-  --cancel-border:rgba(255,255,255,.07);
-  --picker-divider:rgba(255,255,255,.06);
-  --tc-label:rgba(255,255,255,.25);
-  --radius:8px;
+  --card-bg:rgba(255,255,255,.03);
+  --card-hover:rgba(255,255,255,.06);
+  --card-border:rgba(255,255,255,.05);
+  --text-primary:rgba(255,255,255,.9);
+  --text-secondary:rgba(255,255,255,.5);
+  --text-muted:rgba(255,255,255,.3);
+  --accent:#3b82f6;
+  --accent-glow:rgba(59,130,246,.15);
+  --red:#ef4444;
+  --green:#22c55e;
+  --yellow:#eab308;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --radius:10px;
 }
 
-body{background:var(--bg);font-family:var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
-
-/* ── Canvas ── */
-#canvas-wrap{
-  width:100vw;height:100vh;position:relative;overflow:hidden;cursor:grab;
+body{
   background:var(--bg);
-  background-image:radial-gradient(circle,var(--grid-c) 1px,transparent 1px);
-  background-size:24px 24px;
-  transition:background-color .3s;
-}
-#canvas-wrap.panning{cursor:grabbing}
-#scanlines{display:none}
-
-/* ── SVG ── */
-#svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
-#svg-layer line{pointer-events:none}
-
-/* ── Nodes ── */
-.node{
-  position:absolute;min-width:170px;max-width:230px;
-  border-radius:10px;padding:12px 14px 11px;
-  cursor:pointer;user-select:none;
-  border:1.5px solid var(--panel-border);
-  transition:box-shadow .2s,background .3s,border-color .3s;
-  backdrop-filter:blur(8px);
-}
-.node:hover{box-shadow:var(--node-hover-shadow)!important;border-color:var(--btn-hover-border)}
-.node .n-title{
-  font-size:13px;font-weight:600;margin-bottom:4px;
-  letter-spacing:-.01em;line-height:1.3;
-  display:flex;align-items:center;gap:6px;
-}
-.node .n-dot{
-  width:7px;height:7px;border-radius:50%;flex-shrink:0;
-  display:inline-block;
-}
-
-/* Color popover */
-.node-color-popover{
-  position:absolute;bottom:-48px;left:50%;transform:translateX(-50%);
-  display:none;gap:5px;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  border-radius:8px;padding:8px 10px;
-  backdrop-filter:blur(16px);box-shadow:0 4px 20px rgba(0,0,0,.3);
-  z-index:20;
-}
-.node-color-popover.open{display:flex}
-.nc-dot{
-  width:16px;height:16px;border-radius:50%;cursor:pointer;
-  border:2px solid transparent;
-  transition:transform .12s,border-color .12s;
-}
-.nc-dot:hover{transform:scale(1.15)}
-.nc-dot.active{border-color:var(--btn-hover-c)}
-.node .n-desc{font-size:11.5px;line-height:1.5;margin-bottom:5px;color:var(--node-desc);transition:color .2s}
-.node .n-link{
-  font-size:10px;color:inherit;text-decoration:none;cursor:pointer;opacity:.5;
-  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-family:var(--mono);opacity:.6;
-  border-top:1px solid var(--node-link-border);
-  padding-top:5px;margin-top:4px;
-}
-.node .n-link:hover{opacity:1}
-.n-status{display:none}
-
-/* Node actions — toggle menu inside the box */
-.na-toggle{
-  position:absolute;top:6px;right:6px;
-  width:24px;height:24px;border-radius:6px;border:none;
-  cursor:pointer;font-size:14px;line-height:1;
-  display:none;align-items:center;justify-content:center;
-  background:transparent;color:inherit;opacity:.35;
-  transition:opacity .12s;
-}
-.node:hover .na-toggle{display:flex}
-.na-toggle:hover{opacity:.7}
-.node-actions{
-  display:none;flex-wrap:wrap;gap:4px;
-  margin-top:8px;padding-top:8px;
-  border-top:1px solid var(--node-link-border);
-}
-.node-actions.open{display:flex}
-.na-btn{
-  height:28px;border-radius:6px;border:1px solid var(--panel-border);
-  cursor:pointer;font-size:11px;line-height:1;
-  display:flex;align-items:center;justify-content:center;gap:5px;
-  background:var(--input-bg);color:var(--cancel-c);
-  padding:0 10px;transition:all .12s;
-  font-family:var(--font);font-weight:500;
-}
-.na-btn:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border);background:var(--btn-hover-bg)}
-.na-del:hover{color:#f43f5e;border-color:rgba(244,63,94,.3)}
-.na-color{position:relative}
-.na-color-dot{
-  width:10px;height:10px;border-radius:50%;
-  border:1.5px solid var(--cancel-border);
-  transition:border-color .12s;
-}
-.na-color:hover .na-color-dot{border-color:var(--btn-hover-border)}
-
-/* ── Toolbar ── */
-.toolbar{
-  position:absolute;top:14px;left:14px;
-  display:flex;gap:4px;z-index:100;
-  background:var(--panel-bg);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);padding:6px 8px;
-  backdrop-filter:blur(16px);
-  transition:background .3s,border-color .3s;
-}
-.tb-btn{
-  background:transparent;border:1px solid transparent;
-  color:var(--btn-c);padding:6px 12px;border-radius:6px;
-  cursor:pointer;font-size:11px;font-family:var(--font);
-  font-weight:500;transition:all .15s;
-}
-.tb-btn::before{content:none}
-.tb-btn:hover{background:var(--btn-hover-bg);color:var(--btn-hover-c)}
-.tb-btn.flash{color:var(--accent)!important}
-#conn-btn.active{background:rgba(108,138,255,.1);color:var(--accent)}
-
-/* ── Top-right ── */
-#tr-area{
-  position:absolute;top:14px;right:14px;
-  display:flex;flex-direction:column;align-items:flex-end;
-  gap:6px;z-index:100;
-}
-.brand{
-  font-size:10px;color:var(--brand-c);letter-spacing:.06em;
-  font-weight:500;opacity:.5;
-}
-
-/* Theme toggle */
-#theme-toggle{
-  display:flex;align-items:center;gap:7px;
-  font-size:11px;font-weight:500;
-  cursor:pointer;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  padding:6px 12px;border-radius:var(--radius);
-  backdrop-filter:blur(16px);color:var(--btn-c);
-  transition:all .15s;
-}
-#theme-toggle:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-#theme-swatch{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
-
-/* Theme picker */
-#theme-picker{
-  display:none;
-  background:var(--panel-bg);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);
-  backdrop-filter:blur(20px);
-  box-shadow:0 8px 30px rgba(0,0,0,.4);
-  overflow:hidden;
-  transition:background .3s,border-color .3s;
-}
-#theme-picker.open{display:block}
-.picker-inner{display:flex;gap:0}
-.theme-col{display:flex;flex-direction:column;padding:10px 8px;min-width:100px}
-.theme-col+.theme-col{border-left:1px solid var(--picker-divider)}
-.tc-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tc-label);margin-bottom:6px;padding:0 4px;font-weight:600}
-.t-opt{
-  display:flex;align-items:center;gap:7px;
-  padding:6px 8px;border-radius:6px;cursor:pointer;
-  font-size:11px;font-weight:500;
-  color:var(--btn-c);border:1px solid transparent;
-  transition:all .15s;white-space:nowrap;
-}
-.t-opt:hover{background:var(--btn-hover-bg);color:var(--btn-hover-c)}
-.t-opt.active{color:var(--btn-hover-c);background:var(--btn-hover-bg);border-color:var(--btn-hover-border)}
-.t-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:transform .15s}
-.t-opt.active .t-dot{transform:scale(1.2)}
-.mono-row{border-top:1px solid var(--picker-divider);padding:6px 8px 8px}
-
-/* ── HUD ── */
-.hud{
-  position:absolute;bottom:14px;right:14px;
-  font-size:11px;color:var(--hud-c);
-  font-family:var(--mono);text-align:right;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  padding:6px 12px;border-radius:var(--radius);
-  backdrop-filter:blur(16px);
-  transition:background .3s,border-color .3s;
-}
-.hud .hud-val{color:var(--hud-val)}
-
-/* ── Legend ── */
-#legend{
-  position:absolute;bottom:14px;left:14px;
-  display:flex;gap:14px;align-items:center;
-  font-size:10px;color:var(--hud-c);
-  font-family:var(--font);font-weight:500;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  padding:6px 14px;border-radius:var(--radius);
-  backdrop-filter:blur(16px);
-  transition:background .3s,border-color .3s;
-}
-.leg-item{display:flex;align-items:center;gap:6px}
-
-/* ── Modal ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(8px)}
-.modal{
-  background:var(--modal-bg);border:1px solid var(--modal-border);
-  border-radius:12px;padding:24px;width:340px;color:var(--modal-text);
-  font-family:var(--font);box-shadow:0 16px 48px rgba(0,0,0,.5);
-}
-.modal h3{
-  font-size:15px;font-weight:600;margin-bottom:18px;color:var(--modal-title);
-  border-bottom:1px solid var(--modal-border);padding-bottom:12px;
-}
-.modal h3::before{content:none}
-.modal label{font-size:11px;color:var(--modal-label);display:block;margin-bottom:4px;font-weight:500}
-.modal input,.modal textarea,.modal select{
-  width:100%;background:var(--input-bg);border:1px solid var(--input-border);
-  border-radius:6px;color:var(--input-c);padding:8px 10px;font-size:13px;
-  font-family:var(--font);margin-bottom:12px;outline:none;transition:all .15s;
-}
-.modal textarea{height:60px;resize:vertical}
-.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--input-focus-border);background:var(--input-focus-bg)}
-.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
-.m-save{
-  background:var(--accent);color:#fff;border:none;
-  border-radius:6px;padding:8px 20px;cursor:pointer;font-size:12px;font-weight:600;
-  font-family:var(--font);transition:opacity .15s;
-}
-.m-save:hover{opacity:.85}
-.m-cancel{
-  background:transparent;color:var(--cancel-c);
-  border:1px solid var(--cancel-border);border-radius:6px;
-  padding:8px 16px;cursor:pointer;font-size:12px;font-weight:500;
   font-family:var(--font);
-}
-.m-cancel:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-.status-row{display:flex;gap:6px;margin-bottom:12px}
-.s-pick{flex:1;padding:6px 0;border-radius:6px;border:1px solid var(--cancel-border);background:transparent;color:var(--cancel-c);font-size:11px;font-family:var(--font);font-weight:500;cursor:pointer;text-align:center;transition:all .15s}
-.s-pick.active-todo{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.55)}
-.s-pick.active-doing{border-color:rgba(245,166,35,.35);color:#f5a623}
-.s-pick.active-done{border-color:rgba(34,197,94,.35);color:#22c55e}
-
-/* ── Node Mini Canvas (popout modal) ── */
-#node-canvas-overlay{
-  position:fixed;inset:0;z-index:180;
-  background:rgba(0,0,0,.5);
-  backdrop-filter:blur(4px);
-  display:none;align-items:center;justify-content:center;
-  font-family:var(--font);
-}
-#node-canvas-overlay.open{display:flex}
-
-.nc-popout{
-  width:85vw;height:80vh;max-width:1100px;max-height:750px;
-  background:var(--panel-bg);
-  border:1px solid var(--panel-border);
-  border-radius:12px;
-  display:flex;flex-direction:column;
+  color:var(--text-primary);
   overflow:hidden;
-  box-shadow:0 16px 60px rgba(0,0,0,.5);
-  backdrop-filter:blur(20px);
+  height:100vh;
+  -webkit-font-smoothing:antialiased;
 }
 
-.nc-header{
-  display:flex;align-items:center;gap:12px;
-  padding:14px 16px;
-  border-bottom:1px solid var(--picker-divider);
-  flex-shrink:0;
-}
-.nc-back{
-  background:none;border:1px solid var(--cancel-border);color:var(--cancel-c);
-  padding:5px 12px;border-radius:6px;cursor:pointer;
-  font-size:11px;font-family:var(--font);font-weight:500;
-  display:flex;align-items:center;gap:5px;transition:all .15s;
-  flex-shrink:0;
-}
-.nc-back:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-.nc-back::before{content:'←';font-size:12px}
-.nc-header-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.nc-header-info{
-  display:flex;flex-direction:column;gap:2px;
-  flex:1;min-width:0;
-}
-.nc-header-title{
-  font-size:15px;font-weight:600;color:var(--modal-text);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.nc-header-desc{
-  font-size:11px;color:var(--hud-c);line-height:1.4;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+/* ── Layout ── */
+.layout{
+  display:flex;
+  height:100vh;
 }
 
-.nc-toolbar{
-  display:flex;gap:3px;
-  background:var(--input-bg);border:1px solid var(--panel-border);
-  border-radius:6px;padding:3px 5px;
-}
-.nc-toolbar .tb-btn{font-size:10px;padding:4px 10px}
-
-.nc-canvas-area{
-  flex:1;position:relative;overflow:hidden;cursor:grab;
-  background:var(--bg);
-  background-image:radial-gradient(circle,var(--grid-c) 1px,transparent 1px);
-  background-size:24px 24px;
-  border-radius:0 0 12px 12px;
-}
-.nc-canvas-area.panning{cursor:grabbing}
-#nc-canvas{
-  position:absolute;top:0;left:0;width:1px;height:1px;
-  transform-origin:0 0;will-change:transform;
-}
-
-/* Mini canvas items */
-.mc-text{
-  position:absolute;
-  min-width:120px;max-width:300px;
-  background:var(--panel-bg);border:1.5px solid var(--panel-border);
-  border-radius:8px;padding:10px 12px;
-  font-size:13px;line-height:1.5;color:var(--modal-text);
-  cursor:grab;user-select:none;
-  transition:box-shadow .15s,border-color .15s;
-}
-.mc-text:hover{border-color:var(--btn-hover-border);box-shadow:0 2px 12px rgba(0,0,0,.2)}
-.mc-text:hover .mc-actions{opacity:1}
-.mc-text.dragging{opacity:.6;cursor:grabbing;z-index:20}
-.mc-text .mc-content{
-  outline:none;white-space:pre-wrap;word-wrap:break-word;
-  min-height:20px;cursor:text;
-}
-.mc-text .mc-content:empty::before{content:'Type here...';color:var(--hud-c)}
-
-.mc-shape{
-  position:absolute;cursor:grab;user-select:none;
-  transition:box-shadow .15s;
-}
-.mc-shape:hover{box-shadow:0 2px 12px rgba(0,0,0,.2)}
-.mc-shape:hover .mc-actions{opacity:1}
-.mc-shape.dragging{opacity:.6;cursor:grabbing;z-index:20}
-.mc-shape-rect{
-  width:120px;height:80px;border:1.5px solid var(--panel-border);
-  border-radius:8px;background:var(--input-bg);
-}
-.mc-shape-circle{
-  width:80px;height:80px;border:1.5px solid var(--panel-border);
-  border-radius:50%;background:var(--input-bg);
-}
-
-.mc-subbox{
-  position:absolute;
-  width:180px;
-  background:var(--panel-bg);border:1.5px solid var(--panel-border);
-  border-radius:10px;padding:12px 14px;
-  cursor:grab;user-select:none;
-  transition:box-shadow .15s,border-color .15s;
-}
-.mc-subbox:hover{border-color:var(--btn-hover-border);box-shadow:0 2px 12px rgba(0,0,0,.2)}
-.mc-subbox:hover .mc-actions{opacity:1}
-.mc-subbox.dragging{opacity:.6;cursor:grabbing;z-index:20}
-.mc-subbox-title{
-  font-size:13px;font-weight:600;color:var(--modal-text);
-  margin-bottom:4px;outline:none;
-}
-.mc-subbox-title:empty::before{content:'Title...';color:var(--hud-c)}
-.mc-subbox-body{
-  font-size:11.5px;line-height:1.5;color:var(--node-desc);
-  outline:none;
-}
-.mc-subbox-body:empty::before{content:'Details...';color:var(--hud-c)}
-
-.mc-sticky{
-  position:absolute;
-  width:180px;min-height:120px;
-  padding:12px 12px 28px;border-radius:8px;
-  font-size:13px;line-height:1.5;
-  cursor:grab;user-select:none;
-  box-shadow:0 2px 10px rgba(0,0,0,.12);
-  transition:box-shadow .15s;
-}
-.mc-sticky:hover{box-shadow:0 4px 16px rgba(0,0,0,.2)}
-.mc-sticky:hover .mc-actions{opacity:1}
-.mc-sticky:hover .mc-sticky-colors{opacity:1}
-.mc-sticky.dragging{opacity:.6;cursor:grabbing;z-index:20}
-.mc-sticky .mc-content{
-  outline:none;white-space:pre-wrap;word-wrap:break-word;
-  min-height:60px;cursor:text;
-}
-.mc-sticky-colors{
-  position:absolute;bottom:6px;left:10px;
-  display:flex;gap:4px;opacity:0;transition:opacity .15s;
-}
-
-.mc-actions{
-  position:absolute;top:-10px;right:-6px;
-  display:flex;gap:2px;opacity:0;transition:opacity .15s;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  border-radius:6px;padding:2px 3px;
-  backdrop-filter:blur(12px);box-shadow:0 2px 8px rgba(0,0,0,.2);
-}
-.mc-act{
-  width:22px;height:22px;border-radius:5px;border:none;
-  cursor:pointer;font-size:11px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  background:transparent;color:var(--cancel-c);transition:all .12s;
-}
-.mc-act:hover{color:var(--btn-hover-c);background:var(--btn-hover-bg)}
-.mc-act.del:hover{color:#f43f5e;background:rgba(244,63,94,.08)}
-
-.nc-hud{
-  position:absolute;bottom:14px;right:14px;
-  font-size:11px;color:var(--hud-c);font-family:var(--mono);
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  padding:6px 12px;border-radius:8px;backdrop-filter:blur(16px);
-}
-.nc-hud .hud-val{color:var(--hud-val)}
-
-/* ── View Tabs ── */
-#view-tabs{
-  position:fixed;top:14px;left:50%;transform:translateX(-50%);
-  z-index:999;display:flex;gap:2px;
-  background:var(--panel-bg);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);padding:4px;
-  backdrop-filter:blur(20px);
-  box-shadow:0 2px 12px rgba(0,0,0,.2);
-  transition:background .3s,border-color .3s;
-}
-.view-tab{
-  background:transparent;border:none;
-  color:var(--btn-c);padding:7px 18px;border-radius:6px;
-  cursor:pointer;font-size:12px;font-family:var(--font);
-  font-weight:500;transition:all .15s;
-}
-.view-tab:hover{color:var(--btn-hover-c);background:var(--btn-hover-bg)}
-.view-tab.active{
-  background:var(--btn-hover-bg);color:var(--accent);
-}
-
-/* ── Team View (free canvas, like mind map) ── */
-#team-view{
-  position:absolute;inset:0;z-index:40;
-  background:var(--bg);
-  background-image:
-    linear-gradient(var(--grid-c) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid-c) 1px,transparent 1px);
-  background-size:52px 52px;
-  display:none;
-  transition:background-color .35s;
-  overflow:hidden;
-}
-#team-view.active{display:block}
-
-#team-canvas-wrap{
-  position:absolute;inset:0;
-  cursor:grab;overflow:hidden;
-}
-#team-canvas-wrap.panning{cursor:grabbing}
-#team-canvas{
-  position:absolute;top:0;left:0;
-  width:1px;height:1px;
-  transform-origin:0 0;
-  will-change:transform;
-}
-
-/* Team/Project topbar */
-.team-topbar{
-  position:absolute;top:14px;left:14px;z-index:60;
-  display:flex;gap:4px;
-  background:var(--panel-bg);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);padding:6px 8px;
-  backdrop-filter:blur(16px);
-}
-
-.team-header-chip{
-  position:absolute;top:62px;left:50%;transform:translateX(-50%);
-  z-index:60;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  border-radius:var(--radius);padding:7px 16px;
-  backdrop-filter:blur(16px);
-  font-size:12px;color:var(--hud-c);
-  display:flex;align-items:center;gap:8px;
-}
-.team-header-chip strong{color:var(--modal-text);font-weight:600}
-.team-header-chip .team-count{color:var(--accent);font-weight:700}
-
-.team-filters-bar{
-  position:absolute;top:62px;left:14px;z-index:60;
-  display:flex;flex-direction:column;gap:4px;
-}
-.team-filter{
-  display:flex;gap:3px;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  border-radius:var(--radius);padding:4px;
-  backdrop-filter:blur(16px);
-}
-.tf-btn{
-  background:transparent;border:none;color:var(--btn-c);
-  padding:5px 10px;border-radius:6px;cursor:pointer;
-  font-size:10px;font-family:var(--font);
-  font-weight:500;transition:all .15s;
-}
-.tf-btn:hover{color:var(--btn-hover-c);background:var(--btn-hover-bg)}
-.tf-btn.active{background:rgba(108,138,255,.1);color:var(--accent)}
-
-/* Team cards */
-.team-card{
-  position:absolute;
-  width:270px;
-  background:var(--panel-bg);
-  border:1.5px solid var(--panel-border);
-  border-radius:10px;padding:16px;
-  font-family:var(--font);
-  transition:box-shadow .2s,border-color .2s,opacity .2s;
-  backdrop-filter:blur(8px);
-  cursor:grab;user-select:none;
-}
-.team-card:active{cursor:grabbing}
-.team-card:hover{
-  border-color:var(--btn-hover-border);
-  box-shadow:0 2px 16px rgba(0,0,0,.25);
-  z-index:5;
-}
-.team-card:hover .tc-actions{opacity:1}
-.team-card.dragging{opacity:.7;cursor:grabbing;z-index:30}
-.team-card.hidden{display:none}
-
-.tc-actions{
-  position:absolute;top:10px;right:10px;
-  display:flex;gap:4px;opacity:0;transition:opacity .15s;
-}
-.tc-action{
-  background:var(--input-bg);border:1px solid var(--input-border);
-  color:var(--cancel-c);width:22px;height:22px;
-  border-radius:3px;cursor:pointer;font-size:11px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .15s;
-}
-.tc-action:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-.tc-action.del:hover{color:#ff4455;border-color:rgba(255,68,85,.4)}
-
-.tc-top{display:flex;gap:13px;align-items:flex-start;margin-bottom:14px}
-.tc-avatar{
+/* ── Map Section ── */
+.map-section{
+  flex:1;
   position:relative;
-  width:46px;height:46px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:15px;font-weight:600;letter-spacing:.02em;
-  color:#fff;flex-shrink:0;
-  border:2px solid var(--panel-bg);
-  box-shadow:0 0 0 1px var(--accent);
-}
-.tc-emp-dot{
-  position:absolute;bottom:-2px;right:-2px;
-  width:14px;height:14px;border-radius:50%;
-  border:2px solid var(--panel-bg);
-  display:flex;align-items:center;justify-content:center;
-  font-size:8px;font-weight:700;color:#fff;line-height:1;
-}
-.tc-emp-dot.fulltime  {background:#22c55e}
-.tc-emp-dot.contract  {background:#f59e0b}
-.tc-emp-dot.parttime  {background:#f59e0b}
-.tc-emp-dot.intern    {background:#f59e0b}
-.tc-emp-dot.ambassador{background:#3b82f6}
-.tc-emp-dot.pending   {background:#71717a}
-.tc-info{flex:1;min-width:0}
-.tc-name{
-  font-size:15px;font-weight:600;color:var(--modal-text);
-  letter-spacing:-.01em;line-height:1.25;margin-bottom:3px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.tc-role{
-  font-size:12px;color:var(--hud-c);line-height:1.35;
-  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-}
-.tc-dept{
-  font-family:var(--mono);
-  font-size:9px;text-transform:uppercase;letter-spacing:.08em;
-  padding:2px 7px;border-radius:10px;
-  background:var(--input-bg);border:1px solid var(--input-border);
+  overflow:hidden;
 }
 
-.tc-divider{
-  height:1px;background:var(--picker-divider);
-  margin:0 -18px 12px;
-}
-
-.tc-contact{
-  display:flex;flex-direction:column;gap:6px;
-}
-.tc-contact-row{
-  display:flex;align-items:center;gap:8px;
-  font-size:12px;color:var(--modal-text);
-  text-decoration:none;
-  transition:color .15s;
-}
-.tc-contact-row:hover{color:var(--accent)}
-.tc-contact-icon{
-  width:14px;height:14px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--hud-c);font-size:11px;
-}
-.tc-contact-text{
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
-  font-family:var(--mono);font-size:11px;
-}
-
-.team-empty{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  padding:40px 60px;text-align:center;
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  color:var(--hud-c);
-  border:1px dashed var(--panel-border);border-radius:8px;
-  background:var(--panel-bg);backdrop-filter:blur(12px);
+.map-section::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(ellipse at 40% 50%, rgba(59,130,246,.04) 0%, transparent 70%);
   pointer-events:none;
 }
-.team-empty h3{font-size:15px;color:var(--modal-text);margin-bottom:6px;font-weight:600}
-.team-empty p{font-size:12px}
 
-/* ── Sticky notes (Excalidraw-style) ── */
-.sticky-note{
+.map-header{
   position:absolute;
-  width:200px;min-height:140px;
-  padding:14px 14px 32px;
-  border-radius:var(--radius);
-  font-family:var(--font);
-  font-size:13px;line-height:1.5;
-  cursor:grab;user-select:none;
-  box-shadow:0 2px 12px rgba(0,0,0,.15);
-  transition:box-shadow .2s,opacity .2s;
-}
-.sticky-note:hover{
-  box-shadow:0 4px 20px rgba(0,0,0,.25);
-  z-index:6;
-}
-.sticky-note:hover .sn-actions{opacity:1}
-.sticky-note:hover .sn-color-picker{opacity:1}
-.sticky-note:active{cursor:grabbing}
-.sticky-note.dragging{opacity:.75;z-index:30;cursor:grabbing}
-
-.sticky-note .sn-text{
-  outline:none;
-  white-space:pre-wrap;word-wrap:break-word;
-  min-height:80px;
-  cursor:text;
-}
-.sticky-note .sn-text:empty::before{
-  content:'Type a note...';
-  opacity:.4;
-}
-.sticky-note .sn-actions{
-  position:absolute;top:6px;right:6px;
-  display:flex;gap:3px;opacity:0;transition:opacity .15s;
-}
-.sn-action{
-  background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.12);
-  width:18px;height:18px;border-radius:2px;cursor:pointer;
-  font-size:10px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  color:rgba(0,0,0,.55);transition:all .15s;
-}
-.sn-action:hover{background:rgba(0,0,0,.15);color:#000}
-.sn-action.del:hover{background:rgba(255,68,85,.2);color:#a00;border-color:rgba(255,68,85,.4)}
-.sn-color-picker{
-  position:absolute;bottom:8px;left:10px;
-  display:flex;gap:4px;opacity:0;transition:opacity .15s;
-}
-.sn-c-dot{
-  width:11px;height:11px;border-radius:50%;
-  cursor:pointer;border:1px solid rgba(0,0,0,.25);
-  transition:transform .15s;
-}
-.sn-c-dot:hover{transform:scale(1.2)}
-.sticky-note.color-yellow{background:#fef3a8;color:#2a2410}
-.sticky-note.color-pink  {background:#ffc8d4;color:#3a0a1a}
-.sticky-note.color-blue  {background:#b8e0ff;color:#001a3a}
-.sticky-note.color-green {background:#c4f0c4;color:#00280a}
-.sticky-note.color-orange{background:#ffd7a8;color:#3a1a00}
-
-/* HUD readout for team/projects canvas */
-.team-hud{
-  position:absolute;bottom:14px;right:14px;z-index:60;
-  font-size:11px;color:var(--hud-c);
-  font-family:var(--mono);text-align:right;
-  background:var(--panel-bg);border:1px solid var(--panel-border);
-  padding:6px 12px;border-radius:var(--radius);backdrop-filter:blur(16px);
-}
-.team-hud .hud-val{color:var(--hud-val)}
-
-/* ── Projects View ── */
-#projects-view{
-  position:absolute;inset:0;z-index:40;
-  background:var(--bg);
-  background-image:
-    linear-gradient(var(--grid-c) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid-c) 1px,transparent 1px);
-  background-size:52px 52px;
-  display:none;
-  transition:background-color .35s;
-  overflow:hidden;
-}
-#projects-view.active{display:block}
-#projects-canvas-wrap{position:absolute;inset:0;cursor:grab;overflow:hidden}
-#projects-canvas-wrap.panning{cursor:grabbing}
-#projects-canvas{
-  position:absolute;top:0;left:0;width:1px;height:1px;
-  transform-origin:0 0;will-change:transform;
+  top:32px;
+  left:40px;
+  z-index:1000;
+  pointer-events:none;
 }
 
-.project-card{
+.map-header h1{
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:-.03em;
+  color:var(--text-primary);
+}
+
+.map-header h1 span{
+  color:var(--accent);
+}
+
+.map-header p{
+  font-size:12px;
+  color:var(--text-muted);
+  margin-top:4px;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+#map{
+  width:100%;
+  height:100%;
   position:absolute;
-  width:300px;
-  background:var(--panel-bg);
-  border:1.5px solid var(--panel-border);
-  border-radius:10px;padding:18px 18px 14px;
-  font-family:var(--font);
-  transition:box-shadow .2s,border-color .2s,opacity .2s;
+  inset:0;
+  z-index:0;
+}
+
+.leaflet-control-zoom{display:none}
+.leaflet-control-attribution{
+  background:rgba(10,10,15,.7)!important;
+  color:rgba(255,255,255,.2)!important;
+  font-size:9px!important;
+}
+.leaflet-control-attribution a{color:rgba(255,255,255,.3)!important}
+
+.state-tooltip{
+  background:rgba(15,15,22,.92)!important;
+  border:1px solid rgba(59,130,246,.3)!important;
+  color:rgba(255,255,255,.85)!important;
+  font-family:var(--font)!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  padding:5px 10px!important;
+  border-radius:6px!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.4)!important;
+}
+.state-tooltip::before{display:none!important}
+.leaflet-tooltip-top:before{border-top-color:rgba(59,130,246,.3)!important}
+
+/* ── Theme Picker ── */
+.theme-picker{
+  position:absolute;
+  top:32px;
+  right:24px;
+  z-index:1000;
+  display:flex;
+  gap:6px;
+  background:rgba(10,10,15,.85);
   backdrop-filter:blur(8px);
-  cursor:grab;user-select:none;
-}
-.project-card:active{cursor:grabbing}
-.project-card:hover{
-  border-color:var(--btn-hover-border);
-  box-shadow:0 2px 16px rgba(0,0,0,.25);
-  z-index:5;
-}
-.project-card:hover .pc-actions{opacity:1}
-.project-card.dragging{opacity:.7;cursor:grabbing;z-index:30}
-
-.pc-actions{
-  position:absolute;top:10px;right:10px;
-  display:flex;gap:4px;opacity:0;transition:opacity .15s;
-}
-.pc-action{
-  background:var(--input-bg);border:1px solid var(--input-border);
-  color:var(--cancel-c);width:22px;height:22px;
-  border-radius:3px;cursor:pointer;font-size:11px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .15s;
-}
-.pc-action:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-.pc-action.del:hover{color:#ff4455;border-color:rgba(255,68,85,.4)}
-
-.pc-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.pc-name{
-  font-size:17px;font-weight:600;color:var(--modal-text);
-  letter-spacing:-.01em;line-height:1.2;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;
-}
-.pc-status{
-  font-family:var(--font);
-  font-size:10px;font-weight:600;
-  text-transform:uppercase;letter-spacing:.12em;
-  padding:3px 8px;border-radius:10px;
-  border:1px solid;flex-shrink:0;
-}
-.pc-status.live    {color:#22c55e;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}
-.pc-status.beta    {color:#3b82f6;border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.08)}
-.pc-status.building{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08)}
-.pc-status.idea    {color:#a78bfa;border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.08)}
-.pc-status.paused  {color:#71717a;border-color:rgba(113,113,122,.4);background:rgba(113,113,122,.08)}
-
-.pc-url{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:11px;color:var(--accent);text-decoration:none;
-  margin-bottom:12px;opacity:.7;transition:opacity .15s;
-  font-family:var(--mono);
-}
-.pc-url::before{content:'↗ ';opacity:.7}
-.pc-url:hover{opacity:1}
-
-.pc-desc{
-  font-size:12.5px;line-height:1.5;color:var(--modal-text);
-  margin-bottom:12px;
+  padding:6px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.06);
 }
 
-.pc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
-.pc-tag{
-  font-size:10px;font-family:var(--font);
-  font-weight:500;
-  padding:2px 7px;border-radius:10px;
-  background:var(--input-bg);border:1px solid var(--input-border);
-  color:var(--hud-c);
-}
-
-.pc-meta{
-  display:flex;justify-content:space-between;align-items:center;
-  padding-top:10px;border-top:1px solid var(--picker-divider);
-  font-size:11px;color:var(--hud-c);
-  font-family:var(--font);
-}
-.pc-lead{display:flex;align-items:center;gap:5px}
-.pc-lead-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
-.pc-open-hint{
-  font-size:9px;color:var(--hud-c);font-family:'Courier New',monospace;
-  letter-spacing:.06em;
-}
-
-/* ── Kanban Board ── */
-#kanban-overlay{
-  position:absolute;inset:0;z-index:180;
-  background:rgba(0,0,0,.78);backdrop-filter:blur(8px);
-  display:none;flex-direction:column;
-}
-#kanban-overlay.open{display:flex}
-
-.kb-header{
-  display:flex;align-items:center;gap:12px;
-  padding:18px 24px 16px;
-  border-bottom:1px solid var(--picker-divider);
-  background:var(--panel-bg);
-  flex-shrink:0;
-  font-family:var(--font);
-}
-.kb-back{
-  background:none;border:1px solid var(--cancel-border);color:var(--cancel-c);
-  padding:6px 12px;border-radius:6px;cursor:pointer;
-  font-size:12px;font-family:var(--font);font-weight:500;
-  display:flex;align-items:center;gap:6px;
-  transition:all .15s;flex-shrink:0;
-}
-.kb-back:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-.kb-back::before{content:'←';font-size:13px}
-.kb-accent{width:4px;height:30px;border-radius:2px;flex-shrink:0}
-.kb-title-area{flex:1;min-width:0}
-.kb-title{
-  font-size:18px;font-weight:600;color:var(--modal-text);
-  letter-spacing:-.01em;line-height:1.2;
-  display:flex;align-items:center;gap:10px;
-}
-.kb-title-status{
-  font-family:'Courier New',monospace;
-  font-size:8.5px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.12em;
-  padding:3px 8px;border-radius:10px;border:1px solid;
-}
-.kb-subtitle{font-size:11px;color:var(--hud-c);margin-top:2px}
-.kb-close{
-  background:none;border:1px solid var(--cancel-border);color:var(--cancel-c);
-  width:30px;height:30px;border-radius:4px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;line-height:1;transition:all .15s;
-}
-.kb-close:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-
-.kb-board{
-  flex:1;display:flex;gap:14px;
-  padding:20px 24px;overflow-x:auto;
-  background:var(--bg);
-  background-image:
-    linear-gradient(var(--grid-c) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid-c) 1px,transparent 1px);
-  background-size:52px 52px;
-}
-.kb-board::-webkit-scrollbar{height:8px}
-.kb-board::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:4px}
-
-.kb-col{
-  flex:0 0 280px;
-  display:flex;flex-direction:column;
-  background:var(--panel-bg);
-  border:1.5px solid var(--panel-border);
-  border-radius:10px;
-  max-height:100%;
-  font-family:var(--font);
-  transition:border-color .15s;
-}
-.kb-col.drop-target{
-  border-color:var(--btn-hover-border);
-  background:var(--btn-hover-bg);
-}
-.kb-col-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 14px 10px;
-  border-bottom:1px solid var(--picker-divider);
-}
-.kb-col-title{
-  font-size:11px;font-weight:700;color:var(--modal-text);
-  letter-spacing:.1em;text-transform:uppercase;
-  display:flex;align-items:center;gap:8px;
-}
-.kb-col-count{
-  font-size:10px;color:var(--hud-c);font-weight:500;
-  background:var(--input-bg);border:1px solid var(--input-border);
-  padding:1px 7px;border-radius:10px;
-}
-.kb-col-add{
-  background:none;border:none;color:var(--btn-c);
-  width:22px;height:22px;border-radius:3px;cursor:pointer;
-  font-size:16px;line-height:1;transition:all .15s;
-}
-.kb-col-add:hover{color:var(--accent);background:var(--btn-hover-bg)}
-
-.kb-col-body{
-  flex:1;overflow-y:auto;
-  padding:10px;
-  display:flex;flex-direction:column;gap:8px;
-  min-height:60px;
-}
-.kb-col-body::-webkit-scrollbar{width:5px}
-.kb-col-body::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:3px}
-
-.kb-card{
-  background:var(--input-bg);
-  border:1.5px solid var(--input-border);
-  border-radius:8px;padding:12px 13px;
-  font-size:13px;line-height:1.45;color:var(--modal-text);
-  cursor:grab;user-select:none;
-  transition:border-color .15s,box-shadow .15s,opacity .15s;
+.theme-btn{
+  width:28px;height:28px;
+  border-radius:6px;
+  border:2px solid transparent;
+  cursor:pointer;
+  transition:border-color .2s, transform .15s;
   position:relative;
 }
-.kb-card:hover{
-  border-color:var(--btn-hover-border);
-  box-shadow:0 2px 10px rgba(0,0,0,.15);
-}
-.kb-card:hover .kb-card-actions{opacity:1}
-.kb-card:active{cursor:grabbing}
-.kb-card.dragging{opacity:.4}
-.kb-card.color-yellow{box-shadow:inset 3px 0 0 #f5c94f}
-.kb-card.color-pink  {box-shadow:inset 3px 0 0 #ec6b9c}
-.kb-card.color-blue  {box-shadow:inset 3px 0 0 #5b9bd5}
-.kb-card.color-green {box-shadow:inset 3px 0 0 #22c55e}
-.kb-card.color-orange{box-shadow:inset 3px 0 0 #f59e0b}
-.kb-card.color-grey  {box-shadow:inset 3px 0 0 #71717a}
 
-.kb-card-text{
-  outline:none;
-  white-space:pre-wrap;word-wrap:break-word;
-  cursor:text;
-  min-height:18px;
-}
-.kb-card-text:empty::before{content:'New task...';opacity:.4}
+.theme-btn:hover{transform:scale(1.1)}
+.theme-btn.active{border-color:var(--accent)}
 
-.kb-card-actions{
-  position:absolute;top:6px;right:6px;
-  display:flex;gap:3px;opacity:0;transition:opacity .15s;
-}
-.kb-card-action{
-  background:rgba(0,0,0,.25);border:1px solid var(--input-border);
-  color:var(--cancel-c);width:18px;height:18px;
-  border-radius:2px;cursor:pointer;font-size:10px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .15s;
-}
-.kb-card-action:hover{color:var(--btn-hover-c)}
-.kb-card-action.del:hover{color:#ff4455;border-color:rgba(255,68,85,.4)}
+.theme-btn[data-theme="dark"]{background:linear-gradient(135deg,#1a1a2e,#16213e)}
+.theme-btn[data-theme="satellite"]{background:linear-gradient(135deg,#2d5016,#1a3a0a)}
+.theme-btn[data-theme="light"]{background:linear-gradient(135deg,#e0e0e0,#c0c0c0)}
+.theme-btn[data-theme="topo"]{background:linear-gradient(135deg,#2a4858,#1a3040)}
 
-.kb-card-meta{
-  display:flex;align-items:center;gap:6px;margin-top:6px;
-  font-size:10px;color:var(--hud-c);
-  font-family:var(--mono);
-}
-.kb-card-color-row{
-  display:flex;gap:4px;margin-top:8px;opacity:0;
-  transition:opacity .15s;
-}
-.kb-card:hover .kb-card-color-row{opacity:.8}
-.kb-cc{
-  width:10px;height:10px;border-radius:50%;cursor:pointer;
-  border:1px solid rgba(0,0,0,.3);
-  transition:transform .15s;
-}
-.kb-cc:hover{transform:scale(1.25)}
-
-/* Add-column card */
-.kb-add-col{
-  flex:0 0 200px;
-  display:flex;align-items:center;justify-content:center;
-  background:transparent;
-  border:2px dashed var(--panel-border);
-  border-radius:var(--radius);cursor:pointer;
-  font-size:13px;color:var(--hud-c);
-  font-family:var(--font);font-weight:500;
-  transition:all .15s;
-  min-height:120px;
-}
-.kb-add-col:hover{
-  border-color:var(--btn-hover-border);
-  color:var(--accent);background:var(--btn-hover-bg);
+.theme-btn::after{
+  content:attr(title);
+  position:absolute;
+  bottom:-22px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:9px;
+  color:var(--text-muted);
+  white-space:nowrap;
+  opacity:0;
+  transition:opacity .2s;
+  pointer-events:none;
 }
 
-/* Column header actions */
-.kb-col-actions{
-  display:flex;gap:3px;opacity:0;transition:opacity .15s;
+.theme-btn:hover::after{opacity:1}
+
+/* Map stats bar */
+.map-stats{
+  position:absolute;
+  bottom:32px;
+  left:40px;
+  right:40px;
+  display:flex;
+  gap:24px;
+  z-index:1000;
+  pointer-events:none;
 }
-.kb-col:hover .kb-col-actions{opacity:1}
-.kb-col-act{
-  background:none;border:none;color:var(--cancel-c);
-  width:20px;height:20px;cursor:pointer;font-size:10px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:3px;transition:all .15s;
+
+.stat{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
 }
-.kb-col-act:hover{color:var(--btn-hover-c);background:var(--btn-hover-bg)}
-.kb-col-act.del:hover{color:#ff4455;background:rgba(255,68,85,.1)}
-.kb-col-title-input{
-  background:transparent;border:none;outline:none;
-  font-size:12px;font-weight:600;color:var(--modal-text);
+
+.stat-label{
+  font-size:10px;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.stat-value{
+  font-size:14px;
+  font-weight:700;
+  color:var(--text-secondary);
+}
+
+.stat-value.live{
+  color:var(--red);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.live-dot{
+  width:6px;height:6px;
+  background:var(--red);
+  border-radius:50%;
+  animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.3}
+}
+
+/* ── News Panel ── */
+.news-panel{
+  width:420px;
+  background:var(--panel-bg);
+  border-left:1px solid var(--panel-border);
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+}
+
+.panel-header{
+  padding:24px 24px 0;
+  flex-shrink:0;
+}
+
+.panel-title{
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text-secondary);
+  margin-bottom:16px;
+}
+
+/* ── Tabs ── */
+.tabs{
+  display:flex;
+  gap:4px;
+  background:rgba(255,255,255,.03);
+  border-radius:8px;
+  padding:3px;
+  margin-bottom:16px;
+}
+
+.tab{
+  flex:1;
+  padding:8px 12px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text-muted);
+  background:none;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all .2s;
   font-family:var(--font);
-  width:100%;padding:0;
+}
+
+.tab:hover{
+  color:var(--text-secondary);
+}
+
+.tab.active{
+  background:rgba(255,255,255,.07);
+  color:var(--text-primary);
+}
+
+/* ── Search ── */
+.search-wrap{
+  position:relative;
+  margin-bottom:4px;
+}
+
+.search-wrap svg{
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--text-muted);
+}
+
+.search-input{
+  width:100%;
+  padding:10px 12px 10px 36px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--card-border);
+  border-radius:8px;
+  color:var(--text-primary);
+  font-size:13px;
+  font-family:var(--font);
+  outline:none;
+  transition:border-color .2s;
+}
+
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:rgba(59,130,246,.4)}
+
+/* ── News Feed ── */
+.news-feed{
+  flex:1;
+  overflow-y:auto;
+  padding:12px 24px 24px;
+}
+
+.news-feed::-webkit-scrollbar{width:4px}
+.news-feed::-webkit-scrollbar-track{background:transparent}
+.news-feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px}
+
+.news-item{
+  padding:16px;
+  border-radius:var(--radius);
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:all .2s;
+  margin-bottom:4px;
+  text-decoration:none;
+  display:block;
+  color:inherit;
+}
+
+.news-item:hover{
+  background:var(--card-hover);
+  border-color:var(--card-border);
+}
+
+.news-meta{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.news-source{
+  font-size:11px;
+  font-weight:600;
+  color:var(--accent);
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+.news-time{
+  font-size:11px;
+  color:var(--text-muted);
+}
+
+.news-dot{
+  width:3px;height:3px;
+  background:var(--text-muted);
+  border-radius:50%;
+}
+
+.news-category{
+  font-size:10px;
+  font-weight:600;
+  padding:2px 7px;
+  border-radius:4px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  margin-left:auto;
+}
+
+.cat-politics{background:rgba(239,68,68,.12);color:#f87171}
+.cat-economy{background:rgba(34,197,94,.12);color:#4ade80}
+.cat-tech{background:rgba(59,130,246,.12);color:#60a5fa}
+.cat-sports{background:rgba(234,179,8,.12);color:#facc15}
+.cat-world{background:rgba(168,85,247,.12);color:#c084fc}
+.cat-crime{background:rgba(249,115,22,.12);color:#fb923c}
+.cat-health{background:rgba(20,184,166,.12);color:#2dd4bf}
+
+.news-title{
+  font-size:14px;
+  font-weight:600;
+  line-height:1.45;
+  color:var(--text-primary);
+  margin-bottom:6px;
+  letter-spacing:-.01em;
+}
+
+.news-desc{
+  font-size:12px;
+  line-height:1.55;
+  color:var(--text-secondary);
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* ── Breaking banner ── */
+.breaking-banner{
+  margin:0 24px 8px;
+  padding:10px 14px;
+  background:rgba(239,68,68,.08);
+  border:1px solid rgba(239,68,68,.15);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-shrink:0;
+}
+
+.breaking-badge{
+  font-size:10px;
+  font-weight:800;
+  color:var(--red);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.breaking-text{
+  font-size:12px;
+  color:rgba(255,255,255,.7);
+  font-weight:500;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ── Loading ── */
+.skeleton{
+  background:linear-gradient(90deg,rgba(255,255,255,.03) 25%,rgba(255,255,255,.06) 50%,rgba(255,255,255,.03) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:6px;
+}
+
+@keyframes shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+
+.skeleton-item{padding:16px;margin-bottom:4px}
+.skeleton-bar{height:12px;margin-bottom:8px;border-radius:4px}
+.skeleton-bar.w60{width:60%}
+.skeleton-bar.w80{width:80%}
+.skeleton-bar.w100{width:100%}
+.skeleton-bar.short{height:10px;width:30%;margin-bottom:12px}
+
+/* ── Empty state ── */
+.empty-state{
+  text-align:center;
+  padding:60px 20px;
+  color:var(--text-muted);
+}
+
+.empty-state svg{margin-bottom:12px;opacity:.3}
+.empty-state p{font-size:13px}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .layout{flex-direction:column}
+  .map-section{height:45vh;padding:20px}
+  .news-panel{width:100%;height:55vh;border-left:none;border-top:1px solid var(--panel-border)}
+  .map-header{top:16px;left:20px}
+  .map-stats{bottom:16px;left:20px;right:20px}
 }
 </style>
 </head>
 <body>
-<div id="view-tabs">
-  <button class="view-tab active" data-view="structure" onclick="switchView('structure')">Structure</button>
-  <button class="view-tab" data-view="team" onclick="switchView('team')">Team</button>
-  <button class="view-tab" data-view="projects" onclick="switchView('projects')">Tech Labs</button>
-</div>
 
-<div id="canvas-wrap">
-  <div id="scanlines"></div>
-  <svg id="svg-layer">
-    <defs>
-      <marker id="arr" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-        <path d="M0,0 L5,2.5 L0,5 Z" fill="#00e5a0" opacity=".55"/>
-      </marker>
-      <marker id="arr-gold" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-        <path d="M0,0 L5,2.5 L0,5 Z" fill="#d4a017" opacity=".6"/>
-      </marker>
-    </defs>
-  </svg>
-
-  <div class="toolbar">
-    <button class="tb-btn" onclick="addNode(null)">new node</button>
-    <button class="tb-btn" id="conn-btn" onclick="toggleConnect()">connect</button>
-    <button class="tb-btn" onclick="resetView()">reset</button>
-    <button class="tb-btn" id="save-btn" onclick="saveView()">save view</button>
-    <button class="tb-btn" onclick="exportJSON()">export</button>
-    <button class="tb-btn" onclick="importJSON()">import</button>
-  </div>
-
-  <div id="tr-area">
-    <div class="brand">KrackedDevs.com</div>
-    <div id="theme-toggle" onclick="toggleThemePicker()">
-      <span id="theme-swatch"></span>theme
+<div class="layout">
+  <!-- Map Section -->
+  <section class="map-section">
+    <div class="map-header">
+      <h1>Malaysia<span>News</span></h1>
+      <p>Live headlines across the nation</p>
     </div>
-    <div id="theme-picker">
-      <div class="picker-inner">
-        <div class="theme-col" id="col-dark">
-          <div class="tc-label">dark</div>
-        </div>
-        <div class="theme-col" id="col-light">
-          <div class="tc-label">light</div>
-        </div>
+
+    <div id="map"></div>
+
+    <div class="theme-picker">
+      <button class="theme-btn active" data-theme="dark" title="Dark"></button>
+      <button class="theme-btn" data-theme="satellite" title="Satellite"></button>
+      <button class="theme-btn" data-theme="light" title="Light"></button>
+      <button class="theme-btn" data-theme="topo" title="Topo"></button>
+    </div>
+
+    <div class="map-stats">
+      <div class="stat">
+        <span class="stat-label">Status</span>
+        <span class="stat-value live"><span class="live-dot"></span> Live</span>
       </div>
-      <div class="mono-row" id="col-mono"></div>
-    </div>
-  </div>
-
-  <div class="hud"><span id="zoom-info" class="hud-val">100%</span> zoom</div>
-  <div id="legend">
-    <div class="leg-item">
-      <svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#00e5a0" stroke-width="1.5" stroke-opacity=".5"/></svg>
-      hierarchy
-    </div>
-    <div class="leg-item">
-      <svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#d4a017" stroke-width="1.5" stroke-dasharray="5 3" stroke-opacity=".7"/></svg>
-      supports
-    </div>
-    <span id="conn-hint" style="display:none;color:var(--accent);margin-left:6px">// click two nodes to connect</span>
-  </div>
-  <span id="prog-label" style="display:none"></span>
-  <div id="prog-track" style="display:none"><div id="prog-fill"></div></div>
-
-  <!-- Team view -->
-  <div id="team-view">
-    <div id="team-canvas-wrap">
-      <div id="team-canvas"></div>
-    </div>
-
-    <div class="team-topbar">
-      <button class="tb-btn" onclick="addTeamMember()">+ Person</button>
-      <button class="tb-btn" onclick="addStickyNote()">+ Sticky</button>
-      <button class="tb-btn" onclick="resetTeamView()">reset</button>
-      <button class="tb-btn" onclick="autoLayoutTeam()">auto layout</button>
-    </div>
-
-    <div class="team-header-chip">
-      <strong>Team</strong> · <span id="team-count" class="team-count">0</span> people
-    </div>
-
-    <div class="team-filters-bar">
-      <div class="team-filter" id="team-filter"></div>
-      <div class="team-filter" id="team-emp-filter"></div>
-    </div>
-
-    <div class="team-hud">
-      <span id="team-zoom" class="hud-val">100%</span> zoom
-    </div>
-  </div>
-
-  <!-- Projects view -->
-  <div id="projects-view">
-    <div id="projects-canvas-wrap">
-      <div id="projects-canvas"></div>
-    </div>
-
-    <div class="team-topbar">
-      <button class="tb-btn" onclick="addProject()">+ Project</button>
-      <button class="tb-btn" onclick="resetProjectsView()">reset</button>
-      <button class="tb-btn" onclick="autoLayoutProjects()">auto layout</button>
-    </div>
-
-    <div class="team-header-chip">
-      <strong>Tech Labs</strong> · <span id="projects-count" class="team-count">0</span> projects
-    </div>
-
-    <div class="team-filters-bar">
-      <div class="team-filter" id="projects-status-filter"></div>
-    </div>
-
-    <div class="team-hud">
-      <span id="projects-zoom" class="hud-val">100%</span> zoom
-    </div>
-
-    <!-- Kanban overlay -->
-    <div id="kanban-overlay">
-      <div class="kb-header">
-        <button class="kb-back" onclick="closeKanban()">Back</button>
-        <div class="kb-accent" id="kb-accent"></div>
-        <div class="kb-title-area">
-          <div class="kb-title">
-            <span id="kb-title-name"></span>
-            <span class="kb-title-status" id="kb-title-status"></span>
-          </div>
-          <div class="kb-subtitle" id="kb-subtitle"></div>
-        </div>
+      <div class="stat">
+        <span class="stat-label">Sources</span>
+        <span class="stat-value" id="source-count">—</span>
       </div>
-      <div class="kb-board" id="kb-board"></div>
-    </div>
-  </div>
-
-  <!-- Node mini canvas popout -->
-  <div id="node-canvas-overlay" onclick="if(event.target===this)closeNodeCanvas()">
-    <div class="nc-popout">
-      <div class="nc-header">
-        <button class="nc-back" onclick="closeNodeCanvas()">Close</button>
-        <div class="nc-header-dot" id="nc-dot"></div>
-        <div class="nc-header-info">
-          <div class="nc-header-title" id="nc-title"></div>
-          <div class="nc-header-desc" id="nc-desc"></div>
-        </div>
-        <div class="nc-toolbar">
-          <button class="tb-btn" onclick="addMcText()">Text</button>
-          <button class="tb-btn" onclick="addMcSticky()">Sticky</button>
-          <button class="tb-btn" onclick="addMcShape('rect')">▭</button>
-          <button class="tb-btn" onclick="addMcShape('circle')">○</button>
-          <button class="tb-btn" onclick="addMcSubbox()">Box</button>
-        </div>
+      <div class="stat">
+        <span class="stat-label">Articles Today</span>
+        <span class="stat-value" id="article-count">—</span>
       </div>
-      <div class="nc-canvas-area" id="nc-canvas-area">
-        <div id="nc-canvas"></div>
-        <div class="nc-hud"><span id="nc-zoom" class="hud-val">100%</span> zoom</div>
+      <div class="stat">
+        <span class="stat-label">Last Updated</span>
+        <span class="stat-value" id="last-updated">—</span>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- News Panel -->
+  <aside class="news-panel">
+    <div class="panel-header">
+      <div class="panel-title">Latest Headlines</div>
+      <div class="tabs">
+        <button class="tab active" data-tab="all">All</button>
+        <button class="tab" data-tab="politics">Politics</button>
+        <button class="tab" data-tab="economy">Economy</button>
+        <button class="tab" data-tab="tech">Tech</button>
+        <button class="tab" data-tab="sports">Sports</button>
+      </div>
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input class="search-input" type="text" placeholder="Search headlines..." id="search-input"/>
+      </div>
+    </div>
+
+    <div class="breaking-banner" id="breaking-banner" style="display:none">
+      <span class="breaking-badge"><span class="live-dot"></span> BREAKING</span>
+      <span class="breaking-text" id="breaking-text"></span>
+    </div>
+
+    <div class="news-feed" id="news-feed">
+      <!-- Skeleton loading -->
+      <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w80"></div></div>
+      <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w60"></div></div>
+      <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w80"></div><div class="skeleton skeleton-bar w100"></div></div>
+      <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w60"></div></div>
+      <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w80"></div><div class="skeleton skeleton-bar w100"></div></div>
+    </div>
+  </aside>
 </div>
 
 <script>
-const wrap = document.getElementById('canvas-wrap');
-const svgEl = document.getElementById('svg-layer');
-let nodes = [], edges = [], nodeEls = {};
-let pan = {x:80,y:60}, zoom = 1;
-let dragging = null, dragOff = {x:0,y:0};
-let panning = false, panStart = {x:0,y:0}, panOrigin = {x:0,y:0};
-let connectMode = false, connectFirst = null;
-let editModal = null;
-let currentTheme = 'dark-default';
+const RSS_FEEDS = [
+  { name: 'The Star', url: 'https://www.thestar.com.my/rss/News', category: 'politics' },
+  { name: 'The Star', url: 'https://www.thestar.com.my/rss/Business', category: 'economy' },
+  { name: 'The Star', url: 'https://www.thestar.com.my/rss/Tech', category: 'tech' },
+  { name: 'The Star', url: 'https://www.thestar.com.my/rss/Sport', category: 'sports' },
+  { name: 'FMT', url: 'https://www.freemalaysiatoday.com/feed/', category: 'politics' },
+  { name: 'Malay Mail', url: 'https://www.malaymail.com/feed/rss/malaysia', category: 'politics' },
+  { name: 'Malay Mail', url: 'https://www.malaymail.com/feed/rss/sports', category: 'sports' },
+];
 
-const STATUS_CYCLE = ['todo','doing','done'];
-const STATUS_LABELS = {todo:'todo',doing:'in progress',done:'done'};
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
-/* ══════════════════════════════════════════════
-   THEME DEFINITIONS
-   Each theme: { label, mode, accent, swatch,
-     vars: { css-var: value, ... },
-     nodes: { type: { bg, border, title } }
-   }
-══════════════════════════════════════════════ */
-/* Helper to build a dark theme vars object */
-function _dv(bg,accent,gridAlpha){
-  const a=accent;
-  return {
-    '--bg':bg,'--grid-c':`rgba(255,255,255,${gridAlpha||.03})`,'--scan-c':'transparent',
-    '--panel-bg':'rgba(20,20,26,.92)','--panel-border':'rgba(255,255,255,.06)','--panel-glow':'transparent',
-    '--btn-c':'rgba(255,255,255,.5)','--btn-border':'rgba(255,255,255,.08)','--btn-hover-bg':'rgba(255,255,255,.05)',
-    '--btn-hover-border':'rgba(255,255,255,.15)','--btn-hover-c':'rgba(255,255,255,.85)','--accent':a,'--brand-c':'rgba(255,255,255,.2)',
-    '--hud-c':'rgba(255,255,255,.25)','--hud-val':'rgba(255,255,255,.55)',
-    '--modal-bg':'rgba(18,18,24,.98)','--modal-border':'rgba(255,255,255,.08)','--modal-title':'rgba(255,255,255,.9)',
-    '--modal-label':'rgba(255,255,255,.3)','--modal-text':'rgba(255,255,255,.7)',
-    '--input-bg':'rgba(255,255,255,.03)','--input-border':'rgba(255,255,255,.07)','--input-c':'rgba(255,255,255,.8)',
-    '--input-focus-border':a+'80','--input-focus-bg':a+'0a',
-    '--node-desc':'rgba(255,255,255,.4)','--node-link-border':'rgba(255,255,255,.05)',
-    '--node-hover-shadow':'0 2px 16px rgba(0,0,0,.4)',
-    '--cancel-c':'rgba(255,255,255,.3)','--cancel-border':'rgba(255,255,255,.07)',
-    '--picker-divider':'rgba(255,255,255,.06)','--tc-label':'rgba(255,255,255,.25)',
-  };
-}
-function _lv(bg,accent){
-  const a=accent;
-  return {
-    '--bg':bg,'--grid-c':'rgba(0,0,0,.04)','--scan-c':'transparent',
-    '--panel-bg':'rgba(255,255,255,.92)','--panel-border':'rgba(0,0,0,.07)','--panel-glow':'transparent',
-    '--btn-c':'rgba(0,0,0,.45)','--btn-border':'rgba(0,0,0,.08)','--btn-hover-bg':'rgba(0,0,0,.04)',
-    '--btn-hover-border':'rgba(0,0,0,.15)','--btn-hover-c':'rgba(0,0,0,.8)','--accent':a,'--brand-c':'rgba(0,0,0,.2)',
-    '--hud-c':'rgba(0,0,0,.3)','--hud-val':'rgba(0,0,0,.55)',
-    '--modal-bg':'rgba(255,255,255,.98)','--modal-border':'rgba(0,0,0,.08)','--modal-title':'rgba(0,0,0,.85)',
-    '--modal-label':'rgba(0,0,0,.35)','--modal-text':'rgba(0,0,0,.7)',
-    '--input-bg':'rgba(0,0,0,.02)','--input-border':'rgba(0,0,0,.08)','--input-c':'rgba(0,0,0,.8)',
-    '--input-focus-border':a+'80','--input-focus-bg':a+'0a',
-    '--node-desc':'rgba(0,0,0,.4)','--node-link-border':'rgba(0,0,0,.06)',
-    '--node-hover-shadow':'0 2px 12px rgba(0,0,0,.1)',
-    '--cancel-c':'rgba(0,0,0,.3)','--cancel-border':'rgba(0,0,0,.08)',
-    '--picker-divider':'rgba(0,0,0,.06)','--tc-label':'rgba(0,0,0,.25)',
-  };
+let allArticles = [];
+let activeTab = 'all';
+
+// ── Fetch news ──
+async function fetchFeed(feed) {
+  try {
+    const res = await fetch(RSS2JSON + encodeURIComponent(feed.url));
+    const data = await res.json();
+    if (data.status !== 'ok') return [];
+    return (data.items || []).map(item => ({
+      title: decodeHTML(item.title || ''),
+      description: decodeHTML(item.description || '').replace(/<[^>]*>/g, '').slice(0, 200),
+      link: item.link,
+      pubDate: new Date(item.pubDate),
+      source: feed.name,
+      category: feed.category,
+    }));
+  } catch {
+    return [];
+  }
 }
 
+function decodeHTML(html) {
+  const txt = document.createElement('textarea');
+  txt.innerHTML = html;
+  return txt.value;
+}
+
+async function loadNews() {
+  const results = await Promise.all(RSS_FEEDS.map(fetchFeed));
+  allArticles = results.flat().sort((a, b) => b.pubDate - a.pubDate);
+
+  // Deduplicate by similar titles
+  const seen = new Set();
+  allArticles = allArticles.filter(a => {
+    const key = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  updateStats();
+  renderNews();
+  showBreaking();
+}
+
+// ── Render ──
+function renderNews() {
+  const feed = document.getElementById('news-feed');
+  const query = document.getElementById('search-input').value.toLowerCase();
+
+  let items = allArticles;
+  if (activeTab !== 'all') items = items.filter(a => a.category === activeTab);
+  if (query) items = items.filter(a => a.title.toLowerCase().includes(query) || a.description.toLowerCase().includes(query));
+
+  if (items.length === 0) {
+    feed.innerHTML = `
+      <div class="empty-state">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V9a2 2 0 012-2h2a2 2 0 012 2v9a2 2 0 01-2 2h-2z"/></svg>
+        <p>No articles found</p>
+      </div>`;
+    return;
+  }
+
+  feed.innerHTML = items.slice(0, 50).map(a => `
+    <a class="news-item" href="${a.link}" target="_blank" rel="noopener">
+      <div class="news-meta">
+        <span class="news-source">${a.source}</span>
+        <span class="news-dot"></span>
+        <span class="news-time">${timeAgo(a.pubDate)}</span>
+        <span class="news-category cat-${a.category}">${a.category}</span>
+      </div>
+      <div class="news-title">${a.title}</div>
+      ${a.description ? `<div class="news-desc">${a.description}</div>` : ''}
+    </a>
+  `).join('');
+}
+
+function showBreaking() {
+  if (allArticles.length === 0) return;
+  const latest = allArticles[0];
+  const age = Date.now() - latest.pubDate.getTime();
+  // Show as "breaking" if less than 2 hours old
+  if (age < 2 * 60 * 60 * 1000) {
+    document.getElementById('breaking-banner').style.display = 'flex';
+    document.getElementById('breaking-text').textContent = latest.title;
+  }
+}
+
+function updateStats() {
+  const sources = new Set(allArticles.map(a => a.source));
+  document.getElementById('source-count').textContent = sources.size;
+  document.getElementById('article-count').textContent = allArticles.length;
+  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+}
+
+function timeAgo(date) {
+  const s = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+// ── Tabs ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeTab = tab.dataset.tab;
+    renderNews();
+  });
+});
+
+// ── Search ──
+document.getElementById('search-input').addEventListener('input', renderNews);
+
+// ── Leaflet Map ──
+const map = L.map('map', {
+  center: [4.5, 109],
+  zoom: 6,
+  zoomControl: false,
+  attributionControl: true,
+  minZoom: 5,
+  maxZoom: 10,
+});
+
+// ── Tile Themes ──
 const THEMES = {
-  'dark-default': {label:'Default', mode:'dark', accent:'#6c8aff', vars:_dv('#101014','#6c8aff'),
-    nodes:{
-      root:   {bg:'rgba(16,16,28,.95)',  border:'#6c8aff',title:'rgba(255,255,255,.9)'},
-      labs:   {bg:'rgba(20,18,10,.95)',  border:'#e0a840',title:'rgba(255,255,255,.85)'},
-      acad:   {bg:'rgba(10,20,16,.95)',  border:'#4ab870',title:'rgba(255,255,255,.85)'},
-      accel:  {bg:'rgba(18,12,26,.95)',  border:'#a07ae0',title:'rgba(255,255,255,.85)'},
-      people: {bg:'rgba(22,14,14,.95)',  border:'#e06060',title:'rgba(255,255,255,.85)'},
-      default:{bg:'rgba(18,18,24,.95)',  border:'#505068',title:'rgba(255,255,255,.65)'},
-    }
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maskFill: 'rgba(10,10,15,0.85)',
+    stateFill: 'rgba(59,130,246,0.12)',
+    stateStroke: 'rgba(59,130,246,0.4)',
+    hoverFill: 'rgba(59,130,246,0.3)',
+    hoverStroke: '#3b82f6',
   },
-
-  'dark-charcoal': {label:'Charcoal', mode:'dark', accent:'#7aaad8', vars:_dv('#121518','#7aaad8'),
-    nodes:{
-      root:   {bg:'rgba(14,18,26,.95)',  border:'#7aaad8',title:'rgba(255,255,255,.9)'},
-      labs:   {bg:'rgba(22,18,12,.95)',  border:'#d4a840',title:'rgba(255,255,255,.85)'},
-      acad:   {bg:'rgba(12,20,18,.95)',  border:'#55aa70',title:'rgba(255,255,255,.85)'},
-      accel:  {bg:'rgba(18,14,24,.95)',  border:'#9070c0',title:'rgba(255,255,255,.85)'},
-      people: {bg:'rgba(22,14,14,.95)',  border:'#d06060',title:'rgba(255,255,255,.85)'},
-      default:{bg:'rgba(18,20,24,.95)',  border:'#506070',title:'rgba(255,255,255,.65)'},
-    }
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr: '&copy; Esri',
+    subdomains: null,
+    maskFill: 'rgba(0,0,0,0.75)',
+    stateFill: 'rgba(59,130,246,0.08)',
+    stateStroke: 'rgba(255,255,255,0.5)',
+    hoverFill: 'rgba(59,130,246,0.2)',
+    hoverStroke: '#60a5fa',
   },
-
-  'dark-forest': {label:'Forest', mode:'dark', accent:'#5eb86a', vars:_dv('#0c100c','#5eb86a'),
-    nodes:{
-      root:   {bg:'rgba(8,18,10,.95)',   border:'#5eb86a',title:'rgba(255,255,255,.9)'},
-      labs:   {bg:'rgba(16,16,6,.95)',   border:'#b8b030',title:'rgba(255,255,255,.85)'},
-      acad:   {bg:'rgba(6,18,10,.95)',   border:'#48a858',title:'rgba(255,255,255,.85)'},
-      accel:  {bg:'rgba(12,8,16,.95)',   border:'#7a9a40',title:'rgba(255,255,255,.85)'},
-      people: {bg:'rgba(18,10,8,.95)',   border:'#c87848',title:'rgba(255,255,255,.85)'},
-      default:{bg:'rgba(10,14,10,.95)',  border:'#406040',title:'rgba(255,255,255,.65)'},
-    }
+  light: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maskFill: 'rgba(240,240,245,0.85)',
+    stateFill: 'rgba(59,130,246,0.1)',
+    stateStroke: 'rgba(59,130,246,0.5)',
+    hoverFill: 'rgba(59,130,246,0.25)',
+    hoverStroke: '#2563eb',
   },
-
-  'dark-midnight': {label:'Midnight', mode:'dark', accent:'#9580e8', vars:_dv('#0c0c14','#9580e8'),
-    nodes:{
-      root:   {bg:'rgba(10,10,22,.95)',  border:'#9580e8',title:'rgba(255,255,255,.9)'},
-      labs:   {bg:'rgba(18,14,8,.95)',   border:'#d4a840',title:'rgba(255,255,255,.85)'},
-      acad:   {bg:'rgba(8,16,18,.95)',   border:'#40b0c0',title:'rgba(255,255,255,.85)'},
-      accel:  {bg:'rgba(14,8,20,.95)',   border:'#a870d8',title:'rgba(255,255,255,.85)'},
-      people: {bg:'rgba(20,8,14,.95)',   border:'#d05878',title:'rgba(255,255,255,.85)'},
-      default:{bg:'rgba(12,12,20,.95)',  border:'#484868',title:'rgba(255,255,255,.65)'},
-    }
-  },
-
-  'dark-ember': {label:'Ember', mode:'dark', accent:'#e0834a', vars:_dv('#12100c','#e0834a'),
-    nodes:{
-      root:   {bg:'rgba(20,14,8,.95)',   border:'#e0834a',title:'rgba(255,255,255,.9)'},
-      labs:   {bg:'rgba(20,16,8,.95)',   border:'#d4a830',title:'rgba(255,255,255,.85)'},
-      acad:   {bg:'rgba(10,16,10,.95)',  border:'#60a848',title:'rgba(255,255,255,.85)'},
-      accel:  {bg:'rgba(16,8,16,.95)',   border:'#b858a0',title:'rgba(255,255,255,.85)'},
-      people: {bg:'rgba(22,10,8,.95)',   border:'#d05038',title:'rgba(255,255,255,.85)'},
-      default:{bg:'rgba(16,14,10,.95)',  border:'#685040',title:'rgba(255,255,255,.65)'},
-    }
-  },
-
-  /* ── LIGHT ── */
-  'light-arctic': {label:'Arctic', mode:'light', accent:'#3a7ad5', vars:_lv('#f4f5f7','#3a7ad5'),
-    nodes:{
-      root:   {bg:'#eef4fc', border:'#3a7ad5',title:'rgba(0,0,0,.85)'},
-      labs:   {bg:'#fdf8ee', border:'#b88020',title:'rgba(0,0,0,.8)'},
-      acad:   {bg:'#eef8f2', border:'#228848',title:'rgba(0,0,0,.8)'},
-      accel:  {bg:'#f4eefa', border:'#7040b0',title:'rgba(0,0,0,.8)'},
-      people: {bg:'#fceeee', border:'#c83838',title:'rgba(0,0,0,.8)'},
-      default:{bg:'#f2f3f6', border:'#7888a0',title:'rgba(0,0,0,.6)'},
-    }
-  },
-
-  'light-cream': {label:'Cream', mode:'light', accent:'#8a6040', vars:_lv('#f9f6f1','#8a6040'),
-    nodes:{
-      root:   {bg:'#f6f0e4', border:'#8a6040',title:'rgba(0,0,0,.85)'},
-      labs:   {bg:'#fcf4e0', border:'#b88028',title:'rgba(0,0,0,.8)'},
-      acad:   {bg:'#eef6ec', border:'#508838',title:'rgba(0,0,0,.8)'},
-      accel:  {bg:'#f2ecf6', border:'#706080',title:'rgba(0,0,0,.8)'},
-      people: {bg:'#f8ece8', border:'#c05040',title:'rgba(0,0,0,.8)'},
-      default:{bg:'#f4f0ec', border:'#908070',title:'rgba(0,0,0,.6)'},
-    }
-  },
-
-  'light-sage': {label:'Sage', mode:'light', accent:'#3a7a55', vars:_lv('#f2f6f3','#3a7a55'),
-    nodes:{
-      root:   {bg:'#ebf4ee', border:'#3a7a55',title:'rgba(0,0,0,.85)'},
-      labs:   {bg:'#f6f6e8', border:'#808820',title:'rgba(0,0,0,.8)'},
-      acad:   {bg:'#e8f4ee', border:'#309050',title:'rgba(0,0,0,.8)'},
-      accel:  {bg:'#eee8f4', border:'#6850a0',title:'rgba(0,0,0,.8)'},
-      people: {bg:'#f4e8e8', border:'#b04040',title:'rgba(0,0,0,.8)'},
-      default:{bg:'#eef4f0', border:'#608068',title:'rgba(0,0,0,.6)'},
-    }
-  },
-
-  'light-lavender': {label:'Lavender', mode:'light', accent:'#6844b0', vars:_lv('#f4f2f8','#6844b0'),
-    nodes:{
-      root:   {bg:'#eeeafa', border:'#6844b0',title:'rgba(0,0,0,.85)'},
-      labs:   {bg:'#fcf6e8', border:'#a87820',title:'rgba(0,0,0,.8)'},
-      acad:   {bg:'#e8f6ee', border:'#308840',title:'rgba(0,0,0,.8)'},
-      accel:  {bg:'#eae6f8', border:'#7844c0',title:'rgba(0,0,0,.8)'},
-      people: {bg:'#fae8ee', border:'#c03060',title:'rgba(0,0,0,.8)'},
-      default:{bg:'#f0eef4', border:'#7868a0',title:'rgba(0,0,0,.6)'},
-    }
-  },
-
-  'light-dusk': {label:'Dusk', mode:'light', accent:'#c0582a', vars:_lv('#f7f2ee','#c0582a'),
-    nodes:{
-      root:   {bg:'#fcf0e8', border:'#c0582a',title:'rgba(0,0,0,.85)'},
-      labs:   {bg:'#fcf8e0', border:'#b89010',title:'rgba(0,0,0,.8)'},
-      acad:   {bg:'#e8f6ee', border:'#388848',title:'rgba(0,0,0,.8)'},
-      accel:  {bg:'#f4eef8', border:'#8858b0',title:'rgba(0,0,0,.8)'},
-      people: {bg:'#fce8e0', border:'#c04820',title:'rgba(0,0,0,.8)'},
-      default:{bg:'#f8f2ec', border:'#907860',title:'rgba(0,0,0,.6)'},
-    }
-  },
-
-  /* ── MONO ── */
-  'mono': {label:'Mono', mode:'mono', accent:'#888', vars:_dv('#0a0a0a','#888888'),
-    nodes:{
-      root:   {bg:'rgba(20,20,20,.95)',  border:'#aaa',  title:'rgba(255,255,255,.9)'},
-      labs:   {bg:'rgba(16,16,16,.95)',  border:'#777',  title:'rgba(255,255,255,.7)'},
-      acad:   {bg:'rgba(16,16,16,.95)',  border:'#777',  title:'rgba(255,255,255,.7)'},
-      accel:  {bg:'rgba(16,16,16,.95)',  border:'#777',  title:'rgba(255,255,255,.7)'},
-      people: {bg:'rgba(16,16,16,.95)',  border:'#777',  title:'rgba(255,255,255,.7)'},
-      default:{bg:'rgba(12,12,12,.95)',  border:'#555',  title:'rgba(255,255,255,.55)'},
-    }
+  topo: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attr: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+    subdomains: 'abc',
+    maskFill: 'rgba(10,10,15,0.8)',
+    stateFill: 'rgba(59,130,246,0.08)',
+    stateStroke: 'rgba(59,130,246,0.5)',
+    hoverFill: 'rgba(59,130,246,0.25)',
+    hoverStroke: '#3b82f6',
   },
 };
 
-function colorOf(t){
-  const p=(THEMES[currentTheme]||THEMES['dark-default']).nodes;
-  return p[t]||p.default;
+let currentTheme = 'dark';
+let tileLayer = null;
+let maskLayer = null;
+let geojsonLayer = null;
+let malaysiaGeoData = null;
+
+function applyTileLayer(themeKey) {
+  const t = THEMES[themeKey];
+  if (tileLayer) map.removeLayer(tileLayer);
+  const opts = { attribution: t.attr, maxZoom: 19 };
+  if (t.subdomains) opts.subdomains = t.subdomains;
+  tileLayer = L.tileLayer(t.url, opts).addTo(map);
 }
 
-/* Node custom color palette — solid backgrounds with auto B/W text */
-const NODE_COLORS = [
-  {key:'blue',   bg:'#3b82f6', border:'#2563eb', dot:'#3b82f6'},
-  {key:'green',  bg:'#22c55e', border:'#16a34a', dot:'#22c55e'},
-  {key:'amber',  bg:'#f59e0b', border:'#d97706', dot:'#f59e0b'},
-  {key:'red',    bg:'#ef4444', border:'#dc2626', dot:'#ef4444'},
-  {key:'purple', bg:'#8b5cf6', border:'#7c3aed', dot:'#8b5cf6'},
-  {key:'pink',   bg:'#ec4899', border:'#db2777', dot:'#ec4899'},
-  {key:'teal',   bg:'#14b8a6', border:'#0d9488', dot:'#14b8a6'},
-  {key:'grey',   bg:'#6b7280', border:'#4b5563', dot:'#6b7280'},
-  {key:'white',  bg:'#f3f4f6', border:'#d1d5db', dot:'#f3f4f6'},
-  {key:'dark',   bg:'#1f2937', border:'#111827', dot:'#1f2937'},
-];
+applyTileLayer('dark');
 
-/* Returns black or white depending on bg luminance */
-function textColorFor(hex){
-  const c=hex.replace('#','');
-  const r=parseInt(c.substr(0,2),16);
-  const g=parseInt(c.substr(2,2),16);
-  const b=parseInt(c.substr(4,2),16);
-  const lum=(0.299*r+0.587*g+0.114*b)/255;
-  return lum>0.55?'rgba(0,0,0,.85)':'rgba(255,255,255,.95)';
-}
+// ── Mask: darken everything outside Malaysia ──
+function buildMask(geojson, fillColor) {
+  // World polygon (huge rectangle)
+  const outer = [
+    [-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]
+  ];
 
-function descColorFor(hex){
-  const c=hex.replace('#','');
-  const r=parseInt(c.substr(0,2),16);
-  const g=parseInt(c.substr(2,2),16);
-  const b=parseInt(c.substr(4,2),16);
-  const lum=(0.299*r+0.587*g+0.114*b)/255;
-  return lum>0.55?'rgba(0,0,0,.5)':'rgba(255,255,255,.5)';
-}
+  // Extract all polygons from the GeoJSON as holes
+  const holes = [];
+  const features = geojson.features || [];
+  features.forEach(f => {
+    const geom = f.geometry;
+    if (geom.type === 'Polygon') {
+      // Reverse winding for hole
+      holes.push(geom.coordinates[0].map(c => [c[1], c[0]]));
+    } else if (geom.type === 'MultiPolygon') {
+      geom.coordinates.forEach(poly => {
+        holes.push(poly[0].map(c => [c[1], c[0]]));
+      });
+    }
+  });
 
-function nodeColorFor(n){
-  if(n.color){
-    const c=NODE_COLORS.find(c=>c.key===n.color);
-    if(c)return {bg:c.bg, border:c.border, title:textColorFor(c.bg), desc:descColorFor(c.bg)};
-  }
-  return colorOf(n.type);
-}
-
-function applyNodeStyle(el,n){
-  const c=nodeColorFor(n);
-  el.style.background=c.bg;
-  el.style.color=c.title;
-  const dot=el.querySelector('.n-dot');
-  if(dot)dot.style.background=n.color?'rgba(255,255,255,.3)':c.border;
-  const desc=el.querySelector('.n-desc');
-  if(desc)desc.style.color=c.desc||'';
-  el.querySelectorAll('.nc-dot').forEach(d=>d.classList.toggle('active',d.dataset.nc===n.color));
-  // Update color dot in action bar
-  const cDot=el.querySelector('.na-color-dot');
-  if(cDot)cDot.style.background=c.border;
-  // Close popover after picking
-  const pop=el.querySelector('.node-color-popover');
-  if(pop)pop.classList.remove('open');
-}
-
-function setNodeColor(id,colorKey,e){
-  if(e)e.stopPropagation();
-  const n=nodes.find(n=>n.id===id);
-  if(!n)return;
-  n.color=colorKey;
-  const el=nodeEls[id]; if(!el)return;
-  applyNodeStyle(el,n);
-  drawEdges();
-}
-
-function clearNodeColor(id,e){
-  if(e)e.stopPropagation();
-  const n=nodes.find(n=>n.id===id);
-  if(!n)return;
-  delete n.color;
-  const el=nodeEls[id]; if(!el)return;
-  applyNodeStyle(el,n);
-}
-
-/* ── Build theme picker UI ── */
-function buildThemePicker(){
-  const colDark  = document.getElementById('col-dark');
-  const colLight = document.getElementById('col-light');
-  const colMono  = document.getElementById('col-mono');
-  Object.entries(THEMES).forEach(([key,t])=>{
-    const el=document.createElement('div');
-    el.className='t-opt'+(key===currentTheme?' active':'');
-    el.dataset.t=key;
-    el.innerHTML=`<span class="t-dot" style="background:${t.accent}"></span>${t.label}`;
-    el.onclick=()=>setTheme(key);
-    if(t.mode==='dark')   colDark.appendChild(el);
-    else if(t.mode==='light') colLight.appendChild(el);
-    else colMono.appendChild(el);
+  const latlngs = [outer, ...holes];
+  return L.polygon(latlngs, {
+    fillColor: fillColor,
+    fillOpacity: 1,
+    stroke: false,
+    interactive: false,
   });
 }
 
-const initNodes = [
-  {id:'root',x:420,y:280,title:'KrackedDevs.com',desc:'The parent organisation — building, teaching & accelerating in Malaysia.',link:'https://krackeddevs.com',type:'root',status:'todo'},
-  {id:'labs',x:160,y:100,title:'KD Labs',desc:'Builds apps & experiments on products. Our internal innovation engine.',link:'',type:'labs',status:'todo'},
-  {id:'acad',x:700,y:100,title:'KD Academy',desc:'Teaches vibe coding to community, schools & university students.',link:'',type:'acad',status:'todo'},
-  {id:'accel',x:700,y:460,title:'KD Accelerator',desc:'Kracked people work on their startup ideas here.',link:'',type:'accel',status:'todo'},
-  {id:'people',x:160,y:460,title:'People',desc:'Employees, contractors & ambassadors spread across Malaysia.',link:'',type:'people',status:'todo'},
-  {id:'labs-apps',x:20,y:20,title:'App builds',desc:'Full-stack products & MVPs.',link:'',type:'labs',status:'todo'},
-  {id:'labs-exp',x:20,y:180,title:'Experiments',desc:'R&D, prototypes, AI tools.',link:'',type:'labs',status:'todo'},
-  {id:'acad-comm',x:860,y:20,title:'Community',desc:'Vibe coding workshops & events.',link:'',type:'acad',status:'todo'},
-  {id:'acad-school',x:860,y:130,title:'Schools',desc:'Coding programmes for school students.',link:'',type:'acad',status:'todo'},
-  {id:'acad-uni',x:860,y:240,title:'Universities',desc:'Curriculum & bootcamps for uni students.',link:'',type:'acad',status:'todo'},
-  {id:'accel-startups',x:860,y:420,title:'Startups',desc:'Founder-led startup projects.',link:'',type:'accel',status:'todo'},
-  {id:'accel-mentors',x:860,y:520,title:'Mentors',desc:'Industry mentors supporting founders.',link:'',type:'accel',status:'todo'},
-  {id:'people-emp',x:20,y:400,title:'Employees',desc:'Full-time KrackedDevs team.',link:'',type:'people',status:'todo'},
-  {id:'people-con',x:20,y:490,title:'Contractors',desc:'Project-based contributors.',link:'',type:'people',status:'todo'},
-  {id:'people-amb',x:20,y:580,title:'Ambassadors',desc:'KD reps across Malaysia.',link:'',type:'people',status:'todo'},
-];
-
-const initEdges = [
-  ['root','labs'],['root','acad'],['root','accel'],['root','people'],
-  ['labs','accel','supports'],
-  ['labs','labs-apps'],['labs','labs-exp'],
-  ['acad','acad-comm'],['acad','acad-school'],['acad','acad-uni'],
-  ['accel','accel-startups'],['accel','accel-mentors'],
-  ['people','people-emp'],['people','people-con'],['people','people-amb'],
-];
-
-function getId(){return 'n'+Date.now()}
-function toCanvas(cx,cy){const r=wrap.getBoundingClientRect();return{x:(cx-r.left-pan.x)/zoom,y:(cy-r.top-pan.y)/zoom}}
-function statusClass(s){return 's-'+(s||'todo')}
-function nextStatus(s){const i=STATUS_CYCLE.indexOf(s||'todo');return STATUS_CYCLE[(i+1)%STATUS_CYCLE.length]}
-
-function cycleStatus(id,e){
-  e.stopPropagation();
-  const n=nodes.find(n=>n.id===id);
-  n.status=nextStatus(n.status);
-  const el=nodeEls[id];
-  const badge=el.querySelector('.n-status');
-  badge.className='n-status '+statusClass(n.status);
-  badge.innerHTML=statusDot(n.status);
-  el.classList.remove('s-todo','s-doing','s-done');
-  el.classList.add(statusClass(n.status));
-  updateProgress();
+function applyMask() {
+  if (!malaysiaGeoData) return;
+  if (maskLayer) map.removeLayer(maskLayer);
+  maskLayer = buildMask(malaysiaGeoData, THEMES[currentTheme].maskFill);
+  maskLayer.addTo(map);
+  // Ensure mask is below the state borders
+  if (geojsonLayer) geojsonLayer.bringToFront();
 }
 
-function statusDot(s){
-  return `<span style="width:6px;height:6px;border-radius:50%;display:inline-block;background:${s==='done'?'#00e5a0':s==='doing'?'#f5a623':'#555'};${s==='done'?'box-shadow:0 0 4px #00e5a0':s==='doing'?'box-shadow:0 0 4px #f5a623':''}"></span>${STATUS_LABELS[s||'todo']}`;
-}
+// ── GeoJSON state boundaries ──
+const GEOJSON_URL = 'https://raw.githubusercontent.com/dosm-malaysia/data-open/main/datasets/geodata/administrative_1_state.geojson';
+const FALLBACK_URL = 'https://raw.githubusercontent.com/Skyjacker/my-states-geojson/master/malaysia.state.geojson';
 
-function updateProgress(){
-  const total=nodes.length, done=nodes.filter(n=>n.status==='done').length;
-  const pl=document.getElementById('prog-label');
-  const pf=document.getElementById('prog-fill');
-  if(pl)pl.textContent=`${done} / ${total} done`;
-  if(pf)pf.style.width=(total?Math.round(done/total*100):0)+'%';
-}
-
-function createNodeEl(n){
-  const c=nodeColorFor(n);
-  const div=document.createElement('div');
-  div.className='node '+statusClass(n.status);
-  div.id='node-'+n.id;
-  div.style.cssText=`left:0;top:0;`;
-  const colorDots=NODE_COLORS.map(nc=>`<span class="nc-dot${n.color===nc.key?' active':''}" data-nc="${nc.key}" style="background:${nc.dot}" onclick="setNodeColor('${n.id}','${nc.key}',event)"></span>`).join('');
-  div.innerHTML=`
-    <button class="na-toggle" onclick="toggleNodeMenu('${n.id}',event)">⋯</button>
-    <div class="n-status ${statusClass(n.status)}" onclick="cycleStatus('${n.id}',event)">${statusDot(n.status)}</div>
-    <div class="n-title" id="nt-${n.id}"><span class="n-dot" style="background:${c.border}"></span>${n.title}</div>
-    <div class="n-desc" id="nd-${n.id}">${n.desc}</div>
-    <a class="n-link" id="nl-${n.id}" href="${n.link}" target="_blank" style="${n.link?'':'display:none'}">${n.link}</a>
-    <div class="node-actions" id="na-${n.id}">
-      <button class="na-btn" onclick="openNodeCanvas('${n.id}',event)">⤢ Open</button>
-      <button class="na-btn" onclick="openEdit('${n.id}',event)">✎ Edit</button>
-      <button class="na-btn na-color" onclick="toggleColorPopover('${n.id}',event)"><span class="na-color-dot" style="background:${c.border}"></span> Color</button>
-      <button class="na-btn" onclick="addNode('${n.id}',event)">+ Child</button>
-      <button class="na-btn na-del" onclick="deleteNode('${n.id}',event)">× Delete</button>
-    </div>
-    <div class="node-color-popover" id="ncp-${n.id}">${colorDots}</div>
-  `;
-  div.addEventListener('mousedown',e=>startDrag(e,n.id));
-  div.addEventListener('click',e=>nodeClick(e,n.id));
-  div.addEventListener('dblclick',e=>{e.stopPropagation();openNodeCanvas(n.id,e);});
-  wrap.appendChild(div);
-  nodeEls[n.id]=div;
-  applyNodeStyle(div,n);
-  positionNode(n);
-}
-
-function positionNode(n){
-  const el=nodeEls[n.id]; if(!el)return;
-  el.style.transform=`translate(${n.x*zoom+pan.x}px,${n.y*zoom+pan.y}px) scale(${zoom})`;
-  el.style.transformOrigin='top left';
-}
-
-function updateAll(){nodes.forEach(n=>positionNode(n));drawEdges();}
-
-function drawEdges(){
-  while(svgEl.children.length>1)svgEl.removeChild(svgEl.lastChild);
-  edges.forEach(([a,b,etype])=>{
-    const na=nodes.find(n=>n.id===a),nb=nodes.find(n=>n.id===b); if(!na||!nb)return;
-    const ea=nodeEls[a],eb=nodeEls[b]; if(!ea||!eb)return;
-    const wa=ea.offsetWidth||160,ha=ea.offsetHeight||80;
-    const wb=eb.offsetWidth||160,hb=eb.offsetHeight||80;
-    const ax=(na.x+wa/2)*zoom+pan.x, ay=(na.y+ha/2)*zoom+pan.y;
-    const bx=(nb.x+wb/2)*zoom+pan.x, by=(nb.y+hb/2)*zoom+pan.y;
-    const isSupport=etype==='supports';
-    const bothDone=na.status==='done'&&nb.status==='done';
-    const col=isSupport?'#d4a017':bothDone?'#00e5a0':nodeColorFor(na.type==='root'?nb:na).border;
-    const opacity=isSupport?'0.55':bothDone?'0.7':'0.4';
-    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',ax);line.setAttribute('y1',ay);
-    line.setAttribute('x2',bx);line.setAttribute('y2',by);
-    line.setAttribute('stroke',col);line.setAttribute('stroke-width',bothDone?'2':'1.5');
-    line.setAttribute('stroke-opacity',opacity);
-    line.setAttribute('marker-end',isSupport?'url(#arr-gold)':'url(#arr)');
-    if(isSupport)line.setAttribute('stroke-dasharray','6 4');
-    svgEl.appendChild(line);
-  });
-}
-
-function startDrag(e,id){
-  if(connectMode)return; if(e.button!==0)return;
-  e.stopPropagation();
-  const n=nodes.find(n=>n.id===id);
-  const pos=toCanvas(e.clientX,e.clientY);
-  dragging=id; dragOff={x:pos.x-n.x,y:pos.y-n.y};
-  document.addEventListener('mousemove',onDrag);
-  document.addEventListener('mouseup',stopDrag);
-}
-function onDrag(e){
-  if(!dragging)return;
-  const n=nodes.find(n=>n.id===dragging);
-  const pos=toCanvas(e.clientX,e.clientY);
-  n.x=pos.x-dragOff.x; n.y=pos.y-dragOff.y;
-  positionNode(n); drawEdges();
-}
-function stopDrag(){dragging=null;document.removeEventListener('mousemove',onDrag);document.removeEventListener('mouseup',stopDrag);}
-
-wrap.addEventListener('mousedown',e=>{
-  if(e.target!==wrap&&e.target!==svgEl)return;
-  panning=true; wrap.classList.add('panning');
-  panStart={x:e.clientX,y:e.clientY}; panOrigin={x:pan.x,y:pan.y};
-  document.addEventListener('mousemove',onPan);
-  document.addEventListener('mouseup',stopPan);
-});
-function onPan(e){if(!panning)return;pan.x=panOrigin.x+(e.clientX-panStart.x);pan.y=panOrigin.y+(e.clientY-panStart.y);updateAll();}
-function stopPan(){panning=false;wrap.classList.remove('panning');document.removeEventListener('mousemove',onPan);document.removeEventListener('mouseup',stopPan);}
-
-wrap.addEventListener('wheel',e=>{
-  e.preventDefault();
-  const r=wrap.getBoundingClientRect();
-  const mx=e.clientX-r.left,my=e.clientY-r.top;
-  const nz=Math.min(Math.max(zoom*(e.deltaY<0?1.1:0.9),0.3),3);
-  pan.x=mx-(mx-pan.x)*(nz/zoom); pan.y=my-(my-pan.y)*(nz/zoom);
-  zoom=nz;
-  document.getElementById('zoom-info').textContent=Math.round(zoom*100)+'%';
-  updateAll();
-},{passive:false});
-
-document.addEventListener('click',e=>{
-  const picker=document.getElementById('theme-picker');
-  const toggle=document.getElementById('theme-toggle');
-  if(picker.classList.contains('open')&&!picker.contains(e.target)&&!toggle.contains(e.target))
-    picker.classList.remove('open');
-});
-
-function nodeClick(e,id){
-  if(!connectMode)return; e.stopPropagation();
-  if(!connectFirst){connectFirst=id;nodeEls[id].style.outline='2px solid var(--accent)';}
-  else{
-    if(connectFirst!==id&&!edges.find(([a,b])=>a===connectFirst&&b===id)){edges.push([connectFirst,id]);drawEdges();}
-    nodeEls[connectFirst].style.outline=''; connectFirst=null;
-  }
-}
-
-function toggleConnect(){
-  connectMode=!connectMode;
-  document.getElementById('conn-btn').classList.toggle('active',connectMode);
-  document.getElementById('conn-hint').style.display=connectMode?'inline':'none';
-  if(!connectMode&&connectFirst){nodeEls[connectFirst].style.outline='';connectFirst=null;}
-}
-
-function addNode(parentId,e){
-  if(e)e.stopPropagation();
-  const id=getId(); let x=200,y=200;
-  if(parentId){const p=nodes.find(n=>n.id===parentId);x=p.x+200;y=p.y+60;}
-  const n={id,x,y,title:'New node',desc:'',link:'',type:'default',status:'todo'};
-  nodes.push(n); createNodeEl(n);
-  if(parentId)edges.push([parentId,id]);
-  drawEdges(); updateProgress(); openEdit(id,null,true);
-}
-
-function deleteNode(id,e){
-  if(e)e.stopPropagation();
-  if(id==='root')return alert('Cannot delete the root node.');
-  edges=edges.filter(([a,b])=>a!==id&&b!==id);
-  const el=nodeEls[id]; if(el)wrap.removeChild(el);
-  delete nodeEls[id]; nodes=nodes.filter(n=>n.id!==id); drawEdges(); updateProgress();
-}
-
-function openEdit(id,e,isNew){
-  if(e)e.stopPropagation();
-  const n=nodes.find(n=>n.id===id); removeModal();
-  const bg=document.createElement('div'); bg.className='modal-bg';
-  const typeOpts=['root','labs','acad','accel','people','default'].map(t=>`<option value="${t}"${n.type===t?' selected':''}>${t}</option>`).join('');
-  const statusBtns=STATUS_CYCLE.map(s=>`<button type="button" class="s-pick ${n.status===s?'active-'+s:''}" onclick="pickStatus('${s}',this)" data-s="${s}">${STATUS_LABELS[s]}</button>`).join('');
-  bg.innerHTML=`<div class="modal">
-    <h3>${isNew?'Add node':'Edit node'}</h3>
-    <label>Title</label><input id="m-title" value="${n.title.replace(/"/g,'&quot;')}">
-    <label>Description</label><textarea id="m-desc">${n.desc}</textarea>
-    <label>Link (URL)</label><input id="m-link" value="${n.link}" placeholder="https://...">
-    <label>Colour theme</label><select id="m-type">${typeOpts}</select>
-    <label>Status</label><div class="status-row" id="status-row">${statusBtns}</div>
-    <div class="modal-btns">
-      <button class="m-cancel" onclick="removeModal()">Cancel</button>
-      <button class="m-save" onclick="saveEdit('${id}')">Save</button>
-    </div>
-  </div>`;
-  wrap.appendChild(bg); editModal=bg;
-  setTimeout(()=>document.getElementById('m-title').focus(),50);
-}
-
-function pickStatus(s,btn){
-  document.querySelectorAll('.s-pick').forEach(b=>{b.className='s-pick';});
-  btn.className='s-pick active-'+s;
-}
-
-function saveEdit(id){
-  const n=nodes.find(n=>n.id===id);
-  n.title=document.getElementById('m-title').value||'Node';
-  n.desc=document.getElementById('m-desc').value;
-  n.link=document.getElementById('m-link').value;
-  n.type=document.getElementById('m-type').value;
-  const activeBtn=document.getElementById('status-row').querySelector('.s-pick[class*="active-"]');
-  if(activeBtn)n.status=activeBtn.dataset.s;
-  removeModal();
-  const c=nodeColorFor(n); const el=nodeEls[id];
-  el.className='node '+statusClass(n.status);
-  const titleEl=document.getElementById('nt-'+id);
-  titleEl.innerHTML=`<span class="n-dot" style="background:${c.border}"></span>${escHtml(n.title)}`;
-  applyNodeStyle(el,n);
-  document.getElementById('nd-'+id).textContent=n.desc;
-  const badge=el.querySelector('.n-status');
-  badge.className='n-status '+statusClass(n.status);
-  badge.innerHTML=statusDot(n.status);
-  const lel=document.getElementById('nl-'+id);
-  if(n.link){lel.style.display='';lel.href=n.link;lel.textContent=n.link;}
-  else lel.style.display='none';
-  drawEdges(); updateProgress();
-}
-
-function removeModal(){if(editModal){wrap.removeChild(editModal);editModal=null;}}
-function resetView(){pan={x:80,y:60};zoom=1;document.getElementById('zoom-info').textContent='100%';updateAll();}
-
-/* ── Theme ── */
-function toggleThemePicker(){document.getElementById('theme-picker').classList.toggle('open');}
-
-function setTheme(key){
-  const t=THEMES[key]; if(!t)return;
-  currentTheme=key;
-  // Apply all CSS vars to :root
-  Object.entries(t.vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
-  // Update theme swatch button dot
-  document.getElementById('theme-swatch').style.background=t.accent;
-  // Re-color all nodes (custom color overrides survive theme changes)
-  nodes.forEach(n=>{
-    const el=nodeEls[n.id]; if(!el)return;
-    const c=nodeColorFor(n);
-    const titleEl=el.querySelector('.n-title');
-    if(titleEl)titleEl.innerHTML=`<span class="n-dot" style="background:${c.border}"></span>${escHtml(n.title)}`;
-    applyNodeStyle(el,n);
-  });
-  // Update active state in picker
-  document.querySelectorAll('.t-opt').forEach(o=>o.classList.toggle('active',o.dataset.t===key));
-  document.getElementById('theme-picker').classList.remove('open');
-  drawEdges();
-  localStorage.setItem('kd-theme',key);
-}
-
-/* ── Save / Load view ── */
-function saveView(){
-  localStorage.setItem('kd-view',JSON.stringify({pan,zoom,positions:nodes.map(n=>({id:n.id,x:n.x,y:n.y}))}));
-  const btn=document.getElementById('save-btn');
-  btn.classList.add('flash');
-  const orig=btn.textContent;
-  btn.textContent='> saved ✓';
-  setTimeout(()=>{btn.textContent=orig;btn.classList.remove('flash');},1400);
-}
-
-function loadSavedState(){
-  const saved=localStorage.getItem('kd-view');
-  if(!saved)return;
-  try{
-    const s=JSON.parse(saved);
-    if(s.pan)pan=s.pan;
-    if(s.zoom){zoom=s.zoom;document.getElementById('zoom-info').textContent=Math.round(zoom*100)+'%';}
-    if(s.positions)s.positions.forEach(p=>{const n=nodes.find(n=>n.id===p.id);if(n){n.x=p.x;n.y=p.y;}});
-  }catch(e){}
-}
-
-/* ── Export / Import ── */
-function exportJSON(){
-  const blob=new Blob([JSON.stringify({nodes,edges},null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='kd-mindmap.json'; a.click();
-}
-function importJSON(){
-  const input=document.createElement('input'); input.type='file'; input.accept='.json';
-  input.onchange=e=>{
-    const file=e.target.files[0]; if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      try{
-        const data=JSON.parse(ev.target.result);
-        Object.keys(nodeEls).forEach(id=>{wrap.removeChild(nodeEls[id]);});
-        nodeEls={}; nodes=[]; edges=[];
-        data.nodes.forEach(n=>{n.status=n.status||'todo';n.notes=n.notes||[];nodes.push(n);createNodeEl(n);});
-        edges=data.edges||[];
-        drawEdges(); updateProgress();
-      }catch(err){alert('Invalid JSON file.');}
-    };
-    reader.readAsText(file);
+function getStyles() {
+  const t = THEMES[currentTheme];
+  return {
+    default: { fillColor: t.stateFill, color: t.stateStroke, weight: 1, fillOpacity: 1 },
+    hover: { fillColor: t.hoverFill, color: t.hoverStroke, weight: 2, fillOpacity: 1 },
   };
-  input.click();
 }
 
-/* ══════════════════════════════════════════════
-   NODE MINI CANVAS + COLOR POPOVER
-══════════════════════════════════════════════ */
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-const NC_KEY='kd-nodecanvas-v1';
-let ncOpenId=null;
-let ncPan={x:80,y:80}, ncZoom=1;
-let ncPanning=false, ncPanStart={x:0,y:0}, ncPanOrigin={x:0,y:0};
-let ncDragId=null, ncDragOff={x:0,y:0};
-let ncData={};  // {nodeId: [{id,type,x,y,text,title,body,shape,color},...]}
-
-const MC_STICKY_COLORS=['yellow','pink','blue','green','orange'];
-const MC_STICKY_BG={yellow:'#fef3a8',pink:'#ffc8d4',blue:'#b8e0ff',green:'#c4f0c4',orange:'#ffd7a8'};
-
-function loadNcData(){
-  const s=localStorage.getItem(NC_KEY);
-  if(s){try{ncData=JSON.parse(s);}catch(e){ncData={};}}
-}
-function saveNcData(){localStorage.setItem(NC_KEY,JSON.stringify(ncData));}
-function ensureNcData(nid){if(!ncData[nid])ncData[nid]=[];return ncData[nid];}
-
-/* Toggle node action menu */
-function toggleNodeMenu(id,e){
-  e.stopPropagation();
-  const menu=document.getElementById('na-'+id);
-  if(!menu)return;
-  const wasOpen=menu.classList.contains('open');
-  // Close all open menus + popovers
-  document.querySelectorAll('.node-actions.open').forEach(m=>m.classList.remove('open'));
-  document.querySelectorAll('.node-color-popover.open').forEach(p=>p.classList.remove('open'));
-  if(!wasOpen)menu.classList.add('open');
-}
-
-/* Color popover toggle */
-function toggleColorPopover(id,e){
-  e.stopPropagation();
-  const pop=document.getElementById('ncp-'+id);
-  if(!pop)return;
-  const wasOpen=pop.classList.contains('open');
-  document.querySelectorAll('.node-color-popover.open').forEach(p=>p.classList.remove('open'));
-  if(!wasOpen)pop.classList.add('open');
-}
-// Close menus + popovers on outside click
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.node-actions')&&!e.target.closest('.na-toggle')&&!e.target.closest('.node-color-popover')&&!e.target.closest('.na-color')){
-    document.querySelectorAll('.node-actions.open').forEach(m=>m.classList.remove('open'));
-    document.querySelectorAll('.node-color-popover.open').forEach(p=>p.classList.remove('open'));
-  }
-});
-
-/* Open node mini canvas */
-function openNodeCanvas(id,e){
-  if(e)e.stopPropagation();
-  ncOpenId=id;
-  const n=nodes.find(n=>n.id===id);
-  const c=nodeColorFor(n);
-  document.getElementById('nc-dot').style.background=c.border;
-  document.getElementById('nc-title').textContent=n.title;
-  document.getElementById('nc-desc').textContent=n.desc||'';
-  ncPan={x:80,y:80};ncZoom=1;
-  renderNodeCanvas();
-  document.getElementById('node-canvas-overlay').classList.add('open');
-}
-function closeNodeCanvas(){
-  document.getElementById('node-canvas-overlay').classList.remove('open');
-  ncOpenId=null;
-}
-
-function renderNodeCanvas(){
-  if(!ncOpenId)return;
-  const items=ensureNcData(ncOpenId);
-  const canvas=document.getElementById('nc-canvas');
-
-  canvas.innerHTML=items.map(it=>{
-    const del=`<div class="mc-actions"><button class="mc-act del" onclick="deleteMcItem('${it.id}',event)">×</button></div>`;
-    if(it.type==='text'){
-      return `<div class="mc-text" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px">
-        ${del}
-        <div class="mc-content" contenteditable="true" onblur="saveMcText('${it.id}',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.text||'')}</div>
-      </div>`;
-    }
-    if(it.type==='sticky'){
-      const col=it.color||'yellow';
-      const bg=MC_STICKY_BG[col]||MC_STICKY_BG.yellow;
-      const dots=MC_STICKY_COLORS.map(c=>`<span class="nc-dot" style="background:${MC_STICKY_BG[c]};width:12px;height:12px" onclick="setMcStickyColor('${it.id}','${c}',event)"></span>`).join('');
-      return `<div class="mc-sticky" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px;background:${bg};color:#2a2410">
-        ${del}
-        <div class="mc-content" contenteditable="true" onblur="saveMcText('${it.id}',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.text||'')}</div>
-        <div class="mc-sticky-colors">${dots}</div>
-      </div>`;
-    }
-    if(it.type==='shape'){
-      const cls=it.shape==='circle'?'mc-shape-circle':'mc-shape-rect';
-      return `<div class="mc-shape" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px">
-        ${del}<div class="${cls}"></div>
-      </div>`;
-    }
-    if(it.type==='subbox'){
-      return `<div class="mc-subbox" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px">
-        ${del}
-        <div class="mc-subbox-title" contenteditable="true" onblur="saveMcSubbox('${it.id}','title',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.title||'')}</div>
-        <div class="mc-subbox-body" contenteditable="true" onblur="saveMcSubbox('${it.id}','body',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.body||'')}</div>
-      </div>`;
-    }
-    return '';
-  }).join('');
-
-  updateNcTransform();
-  attachMcHandlers();
-}
-
-function updateNcTransform(){
-  document.getElementById('nc-canvas').style.transform=`translate(${ncPan.x}px,${ncPan.y}px) scale(${ncZoom})`;
-  document.getElementById('nc-zoom').textContent=Math.round(ncZoom*100)+'%';
-}
-
-/* Attach drag handlers to mini canvas items */
-function attachMcHandlers(){
-  document.querySelectorAll('#nc-canvas [data-mid]').forEach(el=>{
-    el.addEventListener('mousedown',e=>{
-      // Only skip drag if clicking inside a focused editable, or on action buttons / color dots
-      if(e.target.closest('.mc-actions,.mc-sticky-colors'))return;
-      const editable=e.target.closest('[contenteditable]');
-      if(editable&&document.activeElement===editable)return;
-      if(e.button!==0)return;
-      e.stopPropagation();
-      e.preventDefault(); // prevent focus when starting drag
-      ncDragId=el.dataset.mid;
-      const it=ensureNcData(ncOpenId).find(i=>i.id===ncDragId);
-      if(!it)return;
-      const pos=ncCoords(e.clientX,e.clientY);
-      ncDragOff={x:pos.x-it.x,y:pos.y-it.y};
-      el.classList.add('dragging');
-      document.addEventListener('mousemove',onMcDrag);
-      document.addEventListener('mouseup',stopMcDrag);
-    });
-  });
-}
-
-function onMcDrag(e){
-  if(!ncDragId)return;
-  const it=ensureNcData(ncOpenId).find(i=>i.id===ncDragId);
-  if(!it)return;
-  const pos=ncCoords(e.clientX,e.clientY);
-  it.x=pos.x-ncDragOff.x;it.y=pos.y-ncDragOff.y;
-  const el=document.querySelector(`#nc-canvas [data-mid="${ncDragId}"]`);
-  if(el){el.style.left=it.x+'px';el.style.top=it.y+'px';}
-}
-function stopMcDrag(){
-  document.removeEventListener('mousemove',onMcDrag);
-  document.removeEventListener('mouseup',stopMcDrag);
-  if(ncDragId){
-    document.querySelectorAll('#nc-canvas .dragging').forEach(el=>el.classList.remove('dragging'));
-    saveNcData();
-  }
-  ncDragId=null;
-}
-
-function ncCoords(cx,cy){
-  const r=document.getElementById('nc-canvas-area').getBoundingClientRect();
-  return {x:(cx-r.left-ncPan.x)/ncZoom, y:(cy-r.top-ncPan.y)/ncZoom};
-}
-
-/* Add items */
-function _mcCenter(){
-  const r=document.getElementById('nc-canvas-area').getBoundingClientRect();
-  return {x:(r.width/2-ncPan.x)/ncZoom,y:(r.height/2-ncPan.y)/ncZoom};
-}
-
-function addMcText(){
-  const p=_mcCenter();
-  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'text',x:p.x-60,y:p.y-20,text:''});
-  saveNcData();renderNodeCanvas();
-}
-function addMcSticky(){
-  const p=_mcCenter();
-  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'sticky',x:p.x-90,y:p.y-60,text:'',color:'yellow'});
-  saveNcData();renderNodeCanvas();
-}
-function addMcShape(shape){
-  const p=_mcCenter();
-  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'shape',x:p.x-60,y:p.y-40,shape});
-  saveNcData();renderNodeCanvas();
-}
-function addMcSubbox(){
-  const p=_mcCenter();
-  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'subbox',x:p.x-90,y:p.y-30,title:'',body:''});
-  saveNcData();renderNodeCanvas();
-}
-
-function saveMcText(mid,text){
-  const it=ensureNcData(ncOpenId).find(i=>i.id===mid);
-  if(it)it.text=text;
-  saveNcData();
-}
-function saveMcSubbox(mid,field,val){
-  const it=ensureNcData(ncOpenId).find(i=>i.id===mid);
-  if(it)it[field]=val;
-  saveNcData();
-}
-function setMcStickyColor(mid,color,e){
-  e.stopPropagation();
-  const it=ensureNcData(ncOpenId).find(i=>i.id===mid);
-  if(!it)return;
-  it.color=color;
-  saveNcData();
-  const el=document.querySelector(`#nc-canvas [data-mid="${mid}"]`);
-  if(el)el.style.background=MC_STICKY_BG[color]||MC_STICKY_BG.yellow;
-}
-function deleteMcItem(mid,e){
-  e.stopPropagation();
-  ncData[ncOpenId]=ncData[ncOpenId].filter(i=>i.id!==mid);
-  saveNcData();renderNodeCanvas();
-}
-
-/* Pan/zoom for mini canvas */
-function initNodeCanvas(){
-  const area=document.getElementById('nc-canvas-area');
-  if(!area)return;
-  area.addEventListener('mousedown',e=>{
-    if(e.target!==area&&e.target.id!=='nc-canvas')return;
-    ncPanning=true;area.classList.add('panning');
-    ncPanStart={x:e.clientX,y:e.clientY};ncPanOrigin={x:ncPan.x,y:ncPan.y};
-    document.addEventListener('mousemove',onNcPan);
-    document.addEventListener('mouseup',stopNcPan);
-  });
-  area.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const r=area.getBoundingClientRect();
-    const mx=e.clientX-r.left,my=e.clientY-r.top;
-    const nz=Math.min(Math.max(ncZoom*(e.deltaY<0?1.1:0.9),0.3),3);
-    ncPan.x=mx-(mx-ncPan.x)*(nz/ncZoom);ncPan.y=my-(my-ncPan.y)*(nz/ncZoom);
-    ncZoom=nz;updateNcTransform();
-  },{passive:false});
-}
-function onNcPan(e){
-  if(!ncPanning)return;
-  ncPan.x=ncPanOrigin.x+(e.clientX-ncPanStart.x);
-  ncPan.y=ncPanOrigin.y+(e.clientY-ncPanStart.y);
-  updateNcTransform();
-}
-function stopNcPan(){
-  ncPanning=false;
-  document.getElementById('nc-canvas-area').classList.remove('panning');
-  document.removeEventListener('mousemove',onNcPan);
-  document.removeEventListener('mouseup',stopNcPan);
-}
-
-// Escape to close
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&ncOpenId)closeNodeCanvas();
-});
-
-/* ══════════════════════════════════════════════
-   TEAM VIEW (free canvas + sticky notes)
-══════════════════════════════════════════════ */
-let currentView = 'structure';
-let teamFilter = 'all';
-let teamEmpFilter = 'all';
-let teamMembers = [];
-let teamStickies = [];
-
-// Team canvas pan/zoom state
-let teamPan = {x:80,y:140};
-let teamZoom = 1;
-let teamPanning = false;
-let teamPanStart = {x:0,y:0};
-let teamPanOrigin = {x:0,y:0};
-
-// Drag state (cards + stickies)
-let teamDragId = null;
-let teamDragKind = null; // 'card' | 'sticky'
-let teamDragOff = {x:0,y:0};
-
-const DEPTS = [
-  {key:'all',    label:'All'},
-  {key:'labs',   label:'KD Labs'},
-  {key:'acad',   label:'KD Academy'},
-  {key:'accel',  label:'KD Accelerator'},
-  {key:'people', label:'Ops'},
-  {key:'default',label:'Other'},
-];
-
-const EMP_TYPES = [
-  {key:'fulltime',  label:'Full-time',  short:'FT'},
-  {key:'contract',  label:'Contract',   short:'C'},
-  {key:'parttime',  label:'Part-time',  short:'PT'},
-  {key:'intern',    label:'Intern',     short:'IN'},
-  {key:'ambassador',label:'Ambassador', short:'AMB'},
-  {key:'pending',   label:'Pending',    short:'?'},
-];
-
-const initTeam = [
-  {id:'t1', name:'Danial Hadi Bin Alias',     role:'CEO',                          dept:'people', emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t2', name:'Sheikh Irfan',              role:'Researcher + Analysis + Policy',dept:'labs',  emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t3', name:'Natasha',                   role:'Research + Analysis + Policy', dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t4', name:'Adam Alias',                role:'Marketing Manager',            dept:'people', emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t5', name:'Muhammad Hanif Danial Bin Mohd Nasri',role:'Graphic Designer',   dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t6', name:'Muhaimin',                  role:'Project Director',             dept:'people', emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t7', name:'Iroh',                      role:'Payroll + Accounts',           dept:'people', emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t8', name:'Muhammad Fadli Bin Md Khalid',role:'Software Engineer',          dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t9', name:'Unies',                     role:'AI Engineer',                  dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t10',name:'Syafiq',                    role:'QA Engineer',                  dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t11',name:'Ammar',                     role:'Dev',                          dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t12',name:'Ijam',                      role:'KD Academy Director',          dept:'acad',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t13',name:'Fikrah',                    role:'Intel Investigator / Data',    dept:'labs',   emp:'fulltime',  email:'',twitter:'',github:''},
-  {id:'t14',name:'Jesrina',                   role:'UI/UX Designer',               dept:'labs',   emp:'pending',   email:'',twitter:'',github:''},
-  {id:'t15',name:'Shafwan',                   role:'Penang Ambassador',            dept:'people', emp:'ambassador',email:'',twitter:'',github:''},
-  {id:'t16',name:'Ajwad Kiroro',              role:'Kedah Ambassador',             dept:'people', emp:'ambassador',email:'',twitter:'',github:''},
-  {id:'t17',name:'Nizam',                     role:'Sabah Ambassador',             dept:'people', emp:'ambassador',email:'',twitter:'',github:''},
-  {id:'t18',name:'Aiman MIA',                 role:'Data Guy',                     dept:'labs',   emp:'contract',  email:'',twitter:'',github:''},
-  {id:'t19',name:'Akmal',                     role:'Software Dev Intern',          dept:'labs',   emp:'intern',    email:'',twitter:'',github:''},
-  {id:'t20',name:'Moon',                      role:'Apprentice',                   dept:'labs',   emp:'intern',    email:'',twitter:'',github:''},
-  {id:'t21',name:'Aily',                      role:'Digital Marketing (Instagram)',dept:'people', emp:'parttime',  email:'',twitter:'',github:''},
-  {id:'t22',name:'Akmar',                     role:'Software Dev MyPeta',          dept:'labs',   emp:'contract',  email:'',twitter:'',github:''},
-  {id:'t23',name:'Hafeez',                    role:'Data',                         dept:'labs',   emp:'contract',  email:'',twitter:'',github:''},
-];
-
-function switchView(view){
-  currentView=view;
-  const isStructure=view==='structure';
-  const isTeam=view==='team';
-  const isProjects=view==='projects';
-  document.getElementById('team-view').classList.toggle('active',isTeam);
-  document.getElementById('projects-view').classList.toggle('active',isProjects);
-  document.querySelector('.toolbar').style.display=isStructure?'flex':'none';
-  // Hide structure-only chrome
-  document.getElementById('legend').style.display=isStructure?'flex':'none';
-  document.querySelector('#canvas-wrap > .hud').style.display=isStructure?'block':'none';
-  document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));
-  if(isTeam)renderTeam();
-  if(isProjects)renderProjects();
-  localStorage.setItem('kd-view-mode',view);
-}
-
-/* ── Team canvas pan/zoom ── */
-function initTeamCanvas(){
-  const tw=document.getElementById('team-canvas-wrap');
-  if(!tw)return;
-  tw.addEventListener('mousedown',e=>{
-    // Only pan when clicking empty canvas area
-    if(e.target!==tw&&e.target.id!=='team-canvas')return;
-    teamPanning=true;tw.classList.add('panning');
-    teamPanStart={x:e.clientX,y:e.clientY};
-    teamPanOrigin={x:teamPan.x,y:teamPan.y};
-    document.addEventListener('mousemove',onTeamPan);
-    document.addEventListener('mouseup',stopTeamPan);
-  });
-  tw.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const r=tw.getBoundingClientRect();
-    const mx=e.clientX-r.left,my=e.clientY-r.top;
-    const nz=Math.min(Math.max(teamZoom*(e.deltaY<0?1.1:0.9),0.3),3);
-    teamPan.x=mx-(mx-teamPan.x)*(nz/teamZoom);
-    teamPan.y=my-(my-teamPan.y)*(nz/teamZoom);
-    teamZoom=nz;
-    updateTeamTransform();
-    saveTeamCanvas();
-  },{passive:false});
-}
-
-function onTeamPan(e){
-  if(!teamPanning)return;
-  teamPan.x=teamPanOrigin.x+(e.clientX-teamPanStart.x);
-  teamPan.y=teamPanOrigin.y+(e.clientY-teamPanStart.y);
-  updateTeamTransform();
-}
-function stopTeamPan(){
-  teamPanning=false;
-  document.getElementById('team-canvas-wrap').classList.remove('panning');
-  document.removeEventListener('mousemove',onTeamPan);
-  document.removeEventListener('mouseup',stopTeamPan);
-  saveTeamCanvas();
-}
-
-const TEAM_KEY = 'kd-team-v3';
-const STICKY_KEY = 'kd-team-stickies';
-const TEAM_VIEW_KEY = 'kd-team-canvas';
-
-function loadTeam(){
-  const saved=localStorage.getItem(TEAM_KEY);
-  if(saved){
-    try{teamMembers=JSON.parse(saved);}catch(e){teamMembers=initTeam.map(m=>({...m}));}
-  }else{
-    teamMembers=initTeam.map(m=>({...m}));
-  }
-  // Backfill missing fields
-  teamMembers.forEach(m=>{if(!m.emp)m.emp='fulltime';});
-  // Auto-layout any without positions
-  let needsLayout=teamMembers.some(m=>m.x==null||m.y==null);
-  if(needsLayout)autoLayoutPositions();
-
-  // Stickies
-  const ss=localStorage.getItem(STICKY_KEY);
-  if(ss){try{teamStickies=JSON.parse(ss);}catch(e){teamStickies=[];}}
-
-  // Canvas pan/zoom
-  const cv=localStorage.getItem(TEAM_VIEW_KEY);
-  if(cv){
-    try{
-      const s=JSON.parse(cv);
-      if(s.pan)teamPan=s.pan;
-      if(s.zoom)teamZoom=s.zoom;
-    }catch(e){}
-  }
-}
-
-function autoLayoutPositions(){
-  // Lay out into 4-column grid
-  const COLS=4;
-  const W=300, H=200;
-  const startX=40, startY=40;
-  teamMembers.forEach((m,i)=>{
-    const col=i%COLS;
-    const row=Math.floor(i/COLS);
-    m.x=startX+col*W;
-    m.y=startY+row*H;
-  });
-}
-
-function saveTeam(){
-  localStorage.setItem(TEAM_KEY,JSON.stringify(teamMembers));
-}
-function saveStickies(){
-  localStorage.setItem(STICKY_KEY,JSON.stringify(teamStickies));
-}
-function saveTeamCanvas(){
-  localStorage.setItem(TEAM_VIEW_KEY,JSON.stringify({pan:teamPan,zoom:teamZoom}));
-}
-
-function getInitials(name){
-  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
-}
-
-function avatarColor(name){
-  // Hash name to a hue
-  let h=0;
-  for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))&0xffffffff;
-  const hue=Math.abs(h)%360;
-  return `hsl(${hue},50%,42%)`;
-}
-
-function renderTeam(){
-  const canvas=document.getElementById('team-canvas');
-  const countEl=document.getElementById('team-count');
-  countEl.textContent=teamMembers.length;
-
-  // Filter chips
-  const deptChips=DEPTS.filter(d=>d.key==='all'||teamMembers.some(m=>m.dept===d.key)).map(d=>{
-    const count=d.key==='all'?teamMembers.length:teamMembers.filter(m=>m.dept===d.key).length;
-    return `<button class="tf-btn ${teamFilter===d.key?'active':''}" onclick="setTeamFilter('${d.key}')">${d.label} ${count}</button>`;
-  }).join('');
-  const empChips=[{key:'all',label:'All'}].concat(EMP_TYPES.filter(t=>teamMembers.some(m=>m.emp===t.key))).map(t=>{
-    const count=t.key==='all'?teamMembers.length:teamMembers.filter(m=>m.emp===t.key).length;
-    return `<button class="tf-btn ${teamEmpFilter===t.key?'active':''}" onclick="setTeamEmpFilter('${t.key}')">${t.label} ${count}</button>`;
-  }).join('');
-  document.getElementById('team-filter').innerHTML=deptChips;
-  document.getElementById('team-emp-filter').innerHTML=empChips;
-
-  const isVisible=m=>{
-    if(teamFilter!=='all'&&m.dept!==teamFilter)return false;
-    if(teamEmpFilter!=='all'&&m.emp!==teamEmpFilter)return false;
-    return true;
-  };
-
-  // Cards
-  const cardsHtml=teamMembers.map(m=>{
-    const dept=colorOf(m.dept||'default');
-    const deptLabel=(DEPTS.find(d=>d.key===m.dept)||{label:'Other'}).label;
-    const empType=EMP_TYPES.find(t=>t.key===m.emp)||EMP_TYPES[0];
-    const init=getInitials(m.name);
-    const avBg=avatarColor(m.name);
-    const contacts=[];
-    if(m.email)contacts.push(`<a class="tc-contact-row" href="mailto:${escHtml(m.email)}"><span class="tc-contact-icon">✉</span><span class="tc-contact-text">${escHtml(m.email)}</span></a>`);
-    if(m.twitter)contacts.push(`<a class="tc-contact-row" href="https://twitter.com/${escHtml(m.twitter.replace('@',''))}" target="_blank"><span class="tc-contact-icon">𝕏</span><span class="tc-contact-text">@${escHtml(m.twitter.replace('@',''))}</span></a>`);
-    if(m.github)contacts.push(`<a class="tc-contact-row" href="https://github.com/${escHtml(m.github)}" target="_blank"><span class="tc-contact-icon">⌥</span><span class="tc-contact-text">${escHtml(m.github)}</span></a>`);
-    const hidden=isVisible(m)?'':' hidden';
-    return `<div class="team-card${hidden}" data-tid="${m.id}" style="left:${m.x||0}px;top:${m.y||0}px">
-      <div class="tc-actions">
-        <button class="tc-action" onclick="editTeamMember('${m.id}')" title="Edit">✎</button>
-        <button class="tc-action del" onclick="deleteTeamMember('${m.id}')" title="Delete">×</button>
-      </div>
-      <div class="tc-top">
-        <div class="tc-avatar" style="background:${avBg};box-shadow:0 0 0 1px ${dept.border}">
-          ${init}
-          <span class="tc-emp-dot ${m.emp||'fulltime'}" title="${empType.label}"></span>
-        </div>
-        <div class="tc-info">
-          <div class="tc-name">${escHtml(m.name)}</div>
-          <div class="tc-role">${escHtml(m.role||'')}<span class="tc-dept" style="color:${dept.border};border-color:${dept.border}40">${deptLabel}</span></div>
-        </div>
-      </div>
-      ${contacts.length?`<div class="tc-divider"></div><div class="tc-contact">${contacts.join('')}</div>`:''}
-    </div>`;
-  }).join('');
-
-  // Sticky notes
-  const stickyHtml=teamStickies.map(s=>{
-    const colors=['yellow','pink','blue','green','orange'];
-    const dots=colors.map(c=>`<span class="sn-c-dot" style="background:${stickyBg(c)}" onclick="setStickyColor('${s.id}','${c}',event)"></span>`).join('');
-    return `<div class="sticky-note color-${s.color||'yellow'}" data-sid="${s.id}" style="left:${s.x}px;top:${s.y}px">
-      <div class="sn-actions">
-        <button class="sn-action del" onclick="deleteSticky('${s.id}',event)" title="Delete">×</button>
-      </div>
-      <div class="sn-text" contenteditable="true" oninput="updateStickyText('${s.id}',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(s.text||'')}</div>
-      <div class="sn-color-picker">${dots}</div>
-    </div>`;
-  }).join('');
-
-  canvas.innerHTML=cardsHtml+stickyHtml;
-  updateTeamTransform();
-  attachTeamItemHandlers();
-
-  // Empty state overlay
-  let empty=document.querySelector('#team-view .team-empty');
-  if(empty)empty.remove();
-  const visibleCount=teamMembers.filter(isVisible).length+teamStickies.length;
-  if(!visibleCount){
-    empty=document.createElement('div');
-    empty.className='team-empty';
-    empty.innerHTML='<h3>Nothing to show</h3><p>Add a person, sticky note, or clear filters.</p>';
-    document.getElementById('team-view').appendChild(empty);
-  }
-}
-
-function stickyBg(c){
-  return {yellow:'#fef3a8',pink:'#ffc8d4',blue:'#b8e0ff',green:'#c4f0c4',orange:'#ffd7a8'}[c]||'#fef3a8';
-}
-
-function setTeamEmpFilter(key){teamEmpFilter=key;renderTeam();}
-
-/* ── Free drag for cards & stickies ── */
-function attachTeamItemHandlers(){
-  document.querySelectorAll('#team-canvas .team-card').forEach(el=>{
-    el.addEventListener('mousedown',e=>startTeamDrag(e,el.dataset.tid,'card',el));
-  });
-  document.querySelectorAll('#team-canvas .sticky-note').forEach(el=>{
-    el.addEventListener('mousedown',e=>{
-      if(e.target.classList.contains('sn-text')||e.target.closest('.sn-actions')||e.target.classList.contains('sn-c-dot'))return;
-      startTeamDrag(e,el.dataset.sid,'sticky',el);
-    });
-  });
-}
-
-function startTeamDrag(e,id,kind,el){
-  if(e.target.closest('.tc-action')||e.target.closest('.sn-action'))return;
-  if(e.button!==0)return;
-  e.stopPropagation();
-  teamDragId=id;teamDragKind=kind;
-  const item=kind==='card'?teamMembers.find(m=>m.id===id):teamStickies.find(s=>s.id===id);
-  if(!item)return;
-  const pos=teamCanvasCoords(e.clientX,e.clientY);
-  teamDragOff={x:pos.x-(item.x||0),y:pos.y-(item.y||0)};
-  el.classList.add('dragging');
-  document.addEventListener('mousemove',onTeamItemDrag);
-  document.addEventListener('mouseup',stopTeamItemDrag);
-}
-
-function onTeamItemDrag(e){
-  if(!teamDragId)return;
-  const item=teamDragKind==='card'?teamMembers.find(m=>m.id===teamDragId):teamStickies.find(s=>s.id===teamDragId);
-  if(!item)return;
-  const pos=teamCanvasCoords(e.clientX,e.clientY);
-  item.x=pos.x-teamDragOff.x;
-  item.y=pos.y-teamDragOff.y;
-  const sel=teamDragKind==='card'?`[data-tid="${teamDragId}"]`:`[data-sid="${teamDragId}"]`;
-  const el=document.querySelector('#team-canvas '+sel);
-  if(el){el.style.left=item.x+'px';el.style.top=item.y+'px';}
-}
-
-function stopTeamItemDrag(){
-  document.removeEventListener('mousemove',onTeamItemDrag);
-  document.removeEventListener('mouseup',stopTeamItemDrag);
-  if(teamDragId){
-    document.querySelectorAll('#team-canvas .dragging').forEach(el=>el.classList.remove('dragging'));
-    if(teamDragKind==='card')saveTeam();
-    else saveStickies();
-  }
-  teamDragId=null;teamDragKind=null;
-}
-
-function teamCanvasCoords(cx,cy){
-  const r=document.getElementById('team-canvas-wrap').getBoundingClientRect();
-  return {x:(cx-r.left-teamPan.x)/teamZoom, y:(cy-r.top-teamPan.y)/teamZoom};
-}
-
-function updateTeamTransform(){
-  const c=document.getElementById('team-canvas');
-  c.style.transform=`translate(${teamPan.x}px,${teamPan.y}px) scale(${teamZoom})`;
-  document.getElementById('team-zoom').textContent=Math.round(teamZoom*100)+'%';
-}
-
-function resetTeamView(){
-  teamPan={x:80,y:140};teamZoom=1;
-  updateTeamTransform();saveTeamCanvas();
-}
-
-function autoLayoutTeam(){
-  if(!confirm('Re-arrange all cards into a clean grid? (Stickies stay where they are)'))return;
-  autoLayoutPositions();
-  saveTeam();renderTeam();
-}
-
-/* ── Sticky notes ── */
-function addStickyNote(){
-  const r=document.getElementById('team-canvas-wrap').getBoundingClientRect();
-  const cx=(r.width/2-teamPan.x)/teamZoom-100;
-  const cy=(r.height/2-teamPan.y)/teamZoom-70;
-  teamStickies.push({id:'s'+Date.now(),x:cx,y:cy,text:'',color:'yellow'});
-  saveStickies();renderTeam();
-}
-
-function updateStickyText(id,text){
-  const s=teamStickies.find(s=>s.id===id);
-  if(!s)return;
-  s.text=text;
-  saveStickies();
-}
-
-function setStickyColor(id,color,e){
-  e.stopPropagation();
-  const s=teamStickies.find(s=>s.id===id);
-  if(!s)return;
-  s.color=color;
-  saveStickies();
-  const el=document.querySelector(`#team-canvas [data-sid="${id}"]`);
-  if(el){
-    el.classList.remove('color-yellow','color-pink','color-blue','color-green','color-orange');
-    el.classList.add('color-'+color);
-  }
-}
-
-function deleteSticky(id,e){
-  e.stopPropagation();
-  teamStickies=teamStickies.filter(s=>s.id!==id);
-  saveStickies();renderTeam();
-}
-
-function setTeamFilter(key){
-  teamFilter=key;
-  renderTeam();
-}
-
-function addTeamMember(){
-  openTeamModal({id:'t'+Date.now(),name:'',role:'',dept:'labs',emp:'fulltime',email:'',twitter:'',github:''},true);
-}
-
-function editTeamMember(id){
-  const m=teamMembers.find(m=>m.id===id);
-  if(m)openTeamModal(m,false);
-}
-
-function deleteTeamMember(id){
-  const m=teamMembers.find(m=>m.id===id);
-  if(!m)return;
-  if(!confirm(`Delete ${m.name}?`))return;
-  teamMembers=teamMembers.filter(m=>m.id!==id);
-  saveTeam();renderTeam();
-}
-
-function openTeamModal(m,isNew){
-  removeModal();
-  const bg=document.createElement('div');bg.className='modal-bg';
-  const deptOpts=DEPTS.filter(d=>d.key!=='all').map(d=>`<option value="${d.key}"${m.dept===d.key?' selected':''}>${d.label}</option>`).join('');
-  const empOpts=EMP_TYPES.map(t=>`<option value="${t.key}"${m.emp===t.key?' selected':''}>${t.label}</option>`).join('');
-  bg.innerHTML=`<div class="modal">
-    <h3>${isNew?'Add person':'Edit person'}</h3>
-    <label>Name</label><input id="tm-name" value="${escHtml(m.name)}" placeholder="Full name">
-    <label>Role</label><input id="tm-role" value="${escHtml(m.role||'')}" placeholder="e.g. Engineer, Designer">
-    <label>Department</label><select id="tm-dept">${deptOpts}</select>
-    <label>Employment type</label><select id="tm-emp">${empOpts}</select>
-    <label>Email</label><input id="tm-email" value="${escHtml(m.email||'')}" placeholder="name@krackeddevs.com">
-    <label>Twitter / X</label><input id="tm-twitter" value="${escHtml(m.twitter||'')}" placeholder="@handle">
-    <label>GitHub</label><input id="tm-github" value="${escHtml(m.github||'')}" placeholder="username">
-    <div class="modal-btns">
-      <button class="m-cancel" onclick="removeModal()">Cancel</button>
-      <button class="m-save" onclick="saveTeamMember('${m.id}',${isNew})">Save</button>
-    </div>
-  </div>`;
-  wrap.appendChild(bg);editModal=bg;
-  setTimeout(()=>document.getElementById('tm-name').focus(),50);
-}
-
-function saveTeamMember(id,isNew){
-  const data={
-    id,
-    name:document.getElementById('tm-name').value.trim()||'Unnamed',
-    role:document.getElementById('tm-role').value.trim(),
-    dept:document.getElementById('tm-dept').value,
-    emp:document.getElementById('tm-emp').value,
-    email:document.getElementById('tm-email').value.trim(),
-    twitter:document.getElementById('tm-twitter').value.trim(),
-    github:document.getElementById('tm-github').value.trim(),
-  };
-  if(isNew){
-    teamMembers.push(data);
-  }else{
-    const idx=teamMembers.findIndex(m=>m.id===id);
-    if(idx>-1)teamMembers[idx]=data;
-  }
-  saveTeam();removeModal();renderTeam();
-}
-
-/* ══════════════════════════════════════════════
-   PROJECTS VIEW
-══════════════════════════════════════════════ */
-const PROJECTS_KEY = 'kd-projects-v1';
-const PROJECTS_VIEW_KEY = 'kd-projects-canvas';
-
-let projects = [];
-let projectStatusFilter = 'all';
-let projectsPan = {x:80,y:140};
-let projectsZoom = 1;
-let projectsPanning = false;
-let projectsPanStart = {x:0,y:0};
-let projectsPanOrigin = {x:0,y:0};
-let projectDragId = null;
-let projectDragOff = {x:0,y:0};
-
-const PROJECT_STATUSES = [
-  {key:'live',     label:'Live'},
-  {key:'beta',     label:'Beta'},
-  {key:'building', label:'Building'},
-  {key:'idea',     label:'Idea'},
-  {key:'paused',   label:'Paused'},
-];
-
-const initProjects = [
-  {
-    id:'p1', name:'Cofounders.my',
-    url:'https://cofounders.my',
-    status:'live',
-    desc:'Match-making platform connecting Malaysian founders with co-founders, technical talent, and early collaborators.',
-    tags:['Web','Community','Founders'],
-    lead:'Danial Hadi',
-    x:60, y:60,
-  },
-  {
-    id:'p2', name:'qrsaya.my',
-    url:'https://qrsaya.my',
-    status:'live',
-    desc:'QR code generator and management tool for Malaysian businesses.',
-    tags:['Web','SaaS','SMB'],
-    lead:'KD Labs',
-    x:400, y:60,
-  },
-  {
-    id:'p3', name:'mypeta.ai',
-    url:'https://mypeta.ai',
-    status:'building',
-    desc:'AI-powered platform — internal product under active development.',
-    tags:['AI','Web','MVP'],
-    lead:'Akmar',
-    x:740, y:60,
-  },
-];
-
-function loadProjects(){
-  const saved=localStorage.getItem(PROJECTS_KEY);
-  if(saved){
-    try{projects=JSON.parse(saved);}catch(e){projects=initProjects.map(p=>({...p}));}
-  }else{
-    projects=initProjects.map(p=>({...p}));
-  }
-  // Backfill positions if missing
-  let needsLayout=projects.some(p=>p.x==null||p.y==null);
-  if(needsLayout)autoLayoutProjectPositions();
-
-  const cv=localStorage.getItem(PROJECTS_VIEW_KEY);
-  if(cv){
-    try{
-      const s=JSON.parse(cv);
-      if(s.pan)projectsPan=s.pan;
-      if(s.zoom)projectsZoom=s.zoom;
-    }catch(e){}
-  }
-}
-
-function autoLayoutProjectPositions(){
-  const COLS=3;
-  const W=340, H=260;
-  projects.forEach((p,i)=>{
-    p.x=60+(i%COLS)*W;
-    p.y=60+Math.floor(i/COLS)*H;
-  });
-}
-
-function saveProjects(){
-  localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));
-}
-function saveProjectsCanvas(){
-  localStorage.setItem(PROJECTS_VIEW_KEY,JSON.stringify({pan:projectsPan,zoom:projectsZoom}));
-}
-
-function renderProjects(){
-  const canvas=document.getElementById('projects-canvas');
-  document.getElementById('projects-count').textContent=projects.length;
-
-  // Status filter chips
-  const chips=[{key:'all',label:'All'}].concat(PROJECT_STATUSES.filter(s=>projects.some(p=>p.status===s.key))).map(s=>{
-    const count=s.key==='all'?projects.length:projects.filter(p=>p.status===s.key).length;
-    return `<button class="tf-btn ${projectStatusFilter===s.key?'active':''}" onclick="setProjectStatusFilter('${s.key}')">${s.label} ${count}</button>`;
-  }).join('');
-  document.getElementById('projects-status-filter').innerHTML=chips;
-
-  const isVisible=p=>projectStatusFilter==='all'||p.status===projectStatusFilter;
-
-  canvas.innerHTML=projects.map(p=>{
-    const tags=(p.tags||[]).map(t=>`<span class="pc-tag">${escHtml(t)}</span>`).join('');
-    const hidden=isVisible(p)?'':' style="display:none"';
-    const statusLabel=(PROJECT_STATUSES.find(s=>s.key===p.status)||{label:p.status||''}).label;
-    return `<div class="project-card" data-pid="${p.id}" style="left:${p.x||0}px;top:${p.y||0}px"${hidden?' '+hidden.replace('style="','style="left:'+(p.x||0)+'px;top:'+(p.y||0)+'px;'):''}>
-      <div class="pc-actions">
-        <button class="pc-action" onclick="editProject('${p.id}')" title="Edit">✎</button>
-        <button class="pc-action del" onclick="deleteProject('${p.id}')" title="Delete">×</button>
-      </div>
-      <div class="pc-header">
-        <div class="pc-name">${escHtml(p.name)}</div>
-        <div class="pc-status ${p.status||'idea'}">${statusLabel}</div>
-      </div>
-      ${p.url?`<a class="pc-url" href="${escHtml(p.url)}" target="_blank" onmousedown="event.stopPropagation()">${escHtml(p.url.replace(/^https?:\/\//,''))}</a>`:''}
-      ${p.desc?`<div class="pc-desc">${escHtml(p.desc)}</div>`:''}
-      ${tags?`<div class="pc-tags">${tags}</div>`:''}
-      <div class="pc-meta">
-        ${p.lead?`<div class="pc-lead"><span class="pc-lead-dot"></span>${escHtml(p.lead)}</div>`:'<span></span>'}
-        <span class="pc-open-hint">${countTasks(p)} tasks · dbl-click</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Hide filtered cards properly (the inline-style hack above is messy — clean up here)
-  projects.forEach(p=>{
-    const el=canvas.querySelector(`[data-pid="${p.id}"]`);
-    if(el)el.style.display=isVisible(p)?'':'none';
-  });
-
-  updateProjectsTransform();
-  attachProjectHandlers();
-}
-
-function setProjectStatusFilter(key){projectStatusFilter=key;renderProjects();}
-
-function attachProjectHandlers(){
-  document.querySelectorAll('#projects-canvas .project-card').forEach(el=>{
-    el.addEventListener('mousedown',e=>startProjectDrag(e,el.dataset.pid,el));
-    el.addEventListener('dblclick',e=>{
-      e.stopPropagation();
-      openKanban(el.dataset.pid);
-    });
-  });
-}
-
-function startProjectDrag(e,id,el){
-  if(e.target.closest('.pc-action')||e.target.closest('a'))return;
-  if(e.button!==0)return;
-  e.stopPropagation();
-  projectDragId=id;
-  const p=projects.find(p=>p.id===id);
-  if(!p)return;
-  const pos=projectsCanvasCoords(e.clientX,e.clientY);
-  projectDragOff={x:pos.x-(p.x||0),y:pos.y-(p.y||0)};
-  el.classList.add('dragging');
-  document.addEventListener('mousemove',onProjectDrag);
-  document.addEventListener('mouseup',stopProjectDrag);
-}
-function onProjectDrag(e){
-  if(!projectDragId)return;
-  const p=projects.find(p=>p.id===projectDragId);
-  if(!p)return;
-  const pos=projectsCanvasCoords(e.clientX,e.clientY);
-  p.x=pos.x-projectDragOff.x;
-  p.y=pos.y-projectDragOff.y;
-  const el=document.querySelector(`#projects-canvas [data-pid="${projectDragId}"]`);
-  if(el){el.style.left=p.x+'px';el.style.top=p.y+'px';}
-}
-function stopProjectDrag(){
-  document.removeEventListener('mousemove',onProjectDrag);
-  document.removeEventListener('mouseup',stopProjectDrag);
-  if(projectDragId){
-    document.querySelectorAll('#projects-canvas .dragging').forEach(el=>el.classList.remove('dragging'));
-    saveProjects();
-  }
-  projectDragId=null;
-}
-
-function projectsCanvasCoords(cx,cy){
-  const r=document.getElementById('projects-canvas-wrap').getBoundingClientRect();
-  return {x:(cx-r.left-projectsPan.x)/projectsZoom, y:(cy-r.top-projectsPan.y)/projectsZoom};
-}
-function updateProjectsTransform(){
-  const c=document.getElementById('projects-canvas');
-  c.style.transform=`translate(${projectsPan.x}px,${projectsPan.y}px) scale(${projectsZoom})`;
-  document.getElementById('projects-zoom').textContent=Math.round(projectsZoom*100)+'%';
-}
-function resetProjectsView(){
-  projectsPan={x:80,y:140};projectsZoom=1;
-  updateProjectsTransform();saveProjectsCanvas();
-}
-function autoLayoutProjects(){
-  if(!confirm('Re-arrange all project cards into a clean grid?'))return;
-  autoLayoutProjectPositions();
-  saveProjects();renderProjects();
-}
-
-function initProjectsCanvas(){
-  const pw=document.getElementById('projects-canvas-wrap');
-  if(!pw)return;
-  pw.addEventListener('mousedown',e=>{
-    if(e.target!==pw&&e.target.id!=='projects-canvas')return;
-    projectsPanning=true;pw.classList.add('panning');
-    projectsPanStart={x:e.clientX,y:e.clientY};
-    projectsPanOrigin={x:projectsPan.x,y:projectsPan.y};
-    document.addEventListener('mousemove',onProjectsPan);
-    document.addEventListener('mouseup',stopProjectsPan);
-  });
-  pw.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const r=pw.getBoundingClientRect();
-    const mx=e.clientX-r.left,my=e.clientY-r.top;
-    const nz=Math.min(Math.max(projectsZoom*(e.deltaY<0?1.1:0.9),0.3),3);
-    projectsPan.x=mx-(mx-projectsPan.x)*(nz/projectsZoom);
-    projectsPan.y=my-(my-projectsPan.y)*(nz/projectsZoom);
-    projectsZoom=nz;
-    updateProjectsTransform();
-    saveProjectsCanvas();
-  },{passive:false});
-}
-function onProjectsPan(e){
-  if(!projectsPanning)return;
-  projectsPan.x=projectsPanOrigin.x+(e.clientX-projectsPanStart.x);
-  projectsPan.y=projectsPanOrigin.y+(e.clientY-projectsPanStart.y);
-  updateProjectsTransform();
-}
-function stopProjectsPan(){
-  projectsPanning=false;
-  document.getElementById('projects-canvas-wrap').classList.remove('panning');
-  document.removeEventListener('mousemove',onProjectsPan);
-  document.removeEventListener('mouseup',stopProjectsPan);
-  saveProjectsCanvas();
-}
-
-/* Project CRUD */
-function addProject(){
-  const r=document.getElementById('projects-canvas-wrap').getBoundingClientRect();
-  const cx=(r.width/2-projectsPan.x)/projectsZoom-150;
-  const cy=(r.height/2-projectsPan.y)/projectsZoom-100;
-  openProjectModal({id:'p'+Date.now(),name:'',url:'',status:'idea',desc:'',tags:[],lead:'',x:cx,y:cy},true);
-}
-
-function editProject(id){
-  const p=projects.find(p=>p.id===id);
-  if(p)openProjectModal(p,false);
-}
-
-function deleteProject(id){
-  const p=projects.find(p=>p.id===id);
-  if(!p)return;
-  if(!confirm(`Delete "${p.name}"?`))return;
-  projects=projects.filter(p=>p.id!==id);
-  saveProjects();renderProjects();
-}
-
-function openProjectModal(p,isNew){
-  removeModal();
-  const bg=document.createElement('div');bg.className='modal-bg';
-  const statusOpts=PROJECT_STATUSES.map(s=>`<option value="${s.key}"${p.status===s.key?' selected':''}>${s.label}</option>`).join('');
-  bg.innerHTML=`<div class="modal">
-    <h3>${isNew?'Add project':'Edit project'}</h3>
-    <label>Name</label><input id="pm-name" value="${escHtml(p.name)}" placeholder="e.g. mypeta.ai">
-    <label>URL</label><input id="pm-url" value="${escHtml(p.url||'')}" placeholder="https://...">
-    <label>Status</label><select id="pm-status">${statusOpts}</select>
-    <label>Description</label><textarea id="pm-desc">${escHtml(p.desc||'')}</textarea>
-    <label>Tags (comma-separated)</label><input id="pm-tags" value="${escHtml((p.tags||[]).join(', '))}" placeholder="Web, AI, MVP">
-    <label>Lead</label><input id="pm-lead" value="${escHtml(p.lead||'')}" placeholder="Person or team">
-    <div class="modal-btns">
-      <button class="m-cancel" onclick="removeModal()">Cancel</button>
-      <button class="m-save" onclick="saveProject('${p.id}',${isNew},${p.x},${p.y})">Save</button>
-    </div>
-  </div>`;
-  wrap.appendChild(bg);editModal=bg;
-  setTimeout(()=>document.getElementById('pm-name').focus(),50);
-}
-
-function saveProject(id,isNew,x,y){
-  const data={
-    id,
-    name:document.getElementById('pm-name').value.trim()||'Untitled',
-    url:document.getElementById('pm-url').value.trim(),
-    status:document.getElementById('pm-status').value,
-    desc:document.getElementById('pm-desc').value.trim(),
-    tags:document.getElementById('pm-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
-    lead:document.getElementById('pm-lead').value.trim(),
-    x,y,
-  };
-  if(isNew){
-    projects.push(data);
-  }else{
-    const idx=projects.findIndex(p=>p.id===id);
-    if(idx>-1)projects[idx]={...projects[idx],...data};
-  }
-  saveProjects();removeModal();renderProjects();
-}
-
-/* ══════════════════════════════════════════════
-   KANBAN BOARD (per project, custom columns)
-══════════════════════════════════════════════ */
-const KANBAN_KEY = 'kd-kanban-v2';
-const DEFAULT_COLS = ['Backlog','In Progress','Review','Done'];
-const KANBAN_COLORS = ['yellow','pink','blue','green','orange','grey'];
-const KB_COLOR_HEX = {yellow:'#f5c94f',pink:'#ec6b9c',blue:'#5b9bd5',green:'#22c55e',orange:'#f59e0b',grey:'#71717a'};
-
-// kanbanData[pid] = { columns: ['Backlog','In Progress',...], cards: { 'Backlog':[{id,text,color,time}], ... } }
-let kanbanData = {};
-let kanbanOpenPid = null;
-let kbDragCardId = null;
-let kbDragFromCol = null;
-
-function loadKanban(){
-  const saved=localStorage.getItem(KANBAN_KEY);
-  if(saved){try{kanbanData=JSON.parse(saved);}catch(e){kanbanData={};}}
-  // Migrate v1 format (flat object of arrays) to v2 (columns + cards)
-  Object.keys(kanbanData).forEach(pid=>{
-    const d=kanbanData[pid];
-    if(!d.columns){
-      // v1 format: keys are column keys with array values
-      const oldCols=Object.keys(d);
-      const colNames=oldCols.length?oldCols.map(k=>k.charAt(0).toUpperCase()+k.slice(1)):DEFAULT_COLS.slice();
-      const cards={};
-      colNames.forEach((name,i)=>{cards[name]=d[oldCols[i]]||[];});
-      kanbanData[pid]={columns:colNames,cards};
-    }
-  });
-}
-function saveKanban(){localStorage.setItem(KANBAN_KEY,JSON.stringify(kanbanData));}
-
-function ensureBoard(pid){
-  if(!kanbanData[pid]){
-    kanbanData[pid]={columns:DEFAULT_COLS.slice(),cards:{}};
-    DEFAULT_COLS.forEach(c=>kanbanData[pid].cards[c]=[]);
-  }
-  const d=kanbanData[pid];
-  d.columns.forEach(c=>{if(!d.cards[c])d.cards[c]=[];});
-  return d;
-}
-
-function countTasks(p){
-  const d=kanbanData[p.id];
-  if(!d||!d.cards)return 0;
-  return Object.values(d.cards).reduce((sum,arr)=>sum+arr.length,0);
-}
-
-function openKanban(pid){
-  const p=projects.find(p=>p.id===pid);
-  if(!p)return;
-  kanbanOpenPid=pid;
-  ensureBoard(pid);
-
-  const statusLabel=(PROJECT_STATUSES.find(s=>s.key===p.status)||{label:p.status||''}).label;
-  document.getElementById('kb-title-name').textContent=p.name;
-  const stEl=document.getElementById('kb-title-status');
-  stEl.textContent=statusLabel;
-  stEl.className='kb-title-status pc-status '+(p.status||'idea');
-  document.getElementById('kb-subtitle').textContent=p.url||'';
-  document.getElementById('kb-accent').style.background='var(--accent)';
-
-  renderKanbanBoard();
-  document.getElementById('kanban-overlay').classList.add('open');
-}
-
-function closeKanban(){
-  document.getElementById('kanban-overlay').classList.remove('open');
-  kanbanOpenPid=null;
-  renderProjects(); // update task counts
-}
-
-function renderKanbanBoard(){
-  if(!kanbanOpenPid)return;
-  const d=ensureBoard(kanbanOpenPid);
-  const boardEl=document.getElementById('kb-board');
-
-  const colsHtml=d.columns.map((colName,colIdx)=>{
-    const cards=(d.cards[colName]||[]).map(c=>{
-      const colorDots=KANBAN_COLORS.map(k=>`<span class="kb-cc" style="background:${KB_COLOR_HEX[k]}" onclick="setKbCardColor(${colIdx},'${c.id}','${k}',event)"></span>`).join('');
-      return `<div class="kb-card color-${c.color||'yellow'}" draggable="true" data-cid="${c.id}" data-col="${colIdx}">
-        <div class="kb-card-actions">
-          <button class="kb-card-action del" onclick="deleteKbCard(${colIdx},'${c.id}',event)" title="Delete">×</button>
-        </div>
-        <div class="kb-card-text" contenteditable="true" oninput="updateKbCardText(${colIdx},'${c.id}',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(c.text||'')}</div>
-        ${c.time?`<div class="kb-card-meta">${escHtml(c.time)}</div>`:''}
-        <div class="kb-card-color-row">${colorDots}</div>
-      </div>`;
-    }).join('');
-
-    return `<div class="kb-col" data-col="${colIdx}">
-      <div class="kb-col-header">
-        <div class="kb-col-title">
-          <input class="kb-col-title-input" value="${escHtml(colName)}" onchange="renameKbCol(${colIdx},this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-          <span class="kb-col-count">${(d.cards[colName]||[]).length}</span>
-        </div>
-        <div class="kb-col-actions">
-          <button class="kb-col-act" onclick="addKbCard(${colIdx})" title="Add card">+</button>
-          <button class="kb-col-act del" onclick="deleteKbCol(${colIdx})" title="Delete column">×</button>
-        </div>
-      </div>
-      <div class="kb-col-body">${cards}</div>
-    </div>`;
-  }).join('');
-
-  boardEl.innerHTML=colsHtml+`<div class="kb-add-col" onclick="addKbCol()">+ Add column</div>`;
-  attachKanbanDnd();
-}
-
-function attachKanbanDnd(){
-  document.querySelectorAll('.kb-card').forEach(card=>{
-    card.addEventListener('dragstart',e=>{
-      if(e.target.classList.contains('kb-card-text')||e.target.closest('.kb-card-actions')||e.target.classList.contains('kb-cc')){
-        e.preventDefault();return;
+function addGeoJSON(data) {
+  malaysiaGeoData = data;
+  const styles = getStyles();
+
+  geojsonLayer = L.geoJSON(data, {
+    style: styles.default,
+    onEachFeature(feature, layer) {
+      const name = feature.properties.name || feature.properties.Name || feature.properties.state || feature.properties.STATE || '';
+      if (name) {
+        layer.bindTooltip(name, {
+          sticky: true,
+          className: 'state-tooltip',
+          direction: 'top',
+          offset: [0, -8],
+        });
       }
-      kbDragCardId=card.dataset.cid;
-      kbDragFromCol=parseInt(card.dataset.col);
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed='move';
-      try{e.dataTransfer.setData('text/plain',kbDragCardId);}catch(_){}
-    });
-    card.addEventListener('dragend',()=>{
-      card.classList.remove('dragging');
-      document.querySelectorAll('.kb-col').forEach(c=>c.classList.remove('drop-target'));
-      kbDragCardId=null;kbDragFromCol=null;
-    });
+      layer.on('mouseover', function () { this.setStyle(styles.hover); });
+      layer.on('mouseout', function () { geojsonLayer.resetStyle(this); });
+    },
+  }).addTo(map);
+
+  applyMask();
+}
+
+function refreshGeoJSONStyles() {
+  if (!geojsonLayer || !malaysiaGeoData) return;
+  map.removeLayer(geojsonLayer);
+  addGeoJSON(malaysiaGeoData);
+}
+
+fetch(GEOJSON_URL)
+  .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+  .then(addGeoJSON)
+  .catch(() => {
+    fetch(FALLBACK_URL)
+      .then(r => r.json())
+      .then(addGeoJSON)
+      .catch(() => {});
   });
-  document.querySelectorAll('.kb-col').forEach(col=>{
-    col.addEventListener('dragover',e=>{
-      if(!kbDragCardId)return;
-      e.preventDefault();e.dataTransfer.dropEffect='move';
-      col.classList.add('drop-target');
-    });
-    col.addEventListener('dragleave',e=>{
-      if(!col.contains(e.relatedTarget))col.classList.remove('drop-target');
-    });
-    col.addEventListener('drop',e=>{
-      e.preventDefault();
-      col.classList.remove('drop-target');
-      if(!kbDragCardId)return;
-      const toIdx=parseInt(col.dataset.col);
-      moveKbCard(kbDragFromCol,toIdx,kbDragCardId);
-    });
+
+// ── Theme Switcher ──
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTheme = btn.dataset.theme;
+    applyTileLayer(currentTheme);
+    refreshGeoJSONStyles();
   });
-}
-
-/* Column CRUD */
-function addKbCol(){
-  if(!kanbanOpenPid)return;
-  const d=ensureBoard(kanbanOpenPid);
-  const name=prompt('New column name:');
-  if(!name||!name.trim())return;
-  const n=name.trim();
-  if(d.columns.includes(n)){alert('Column already exists.');return;}
-  d.columns.push(n);
-  d.cards[n]=[];
-  saveKanban();renderKanbanBoard();
-}
-
-function renameKbCol(colIdx,newName){
-  if(!kanbanOpenPid)return;
-  const d=ensureBoard(kanbanOpenPid);
-  const oldName=d.columns[colIdx];
-  const n=newName.trim();
-  if(!n){renderKanbanBoard();return;} // revert if empty
-  if(n===oldName)return;
-  if(d.columns.includes(n)){alert('A column with that name already exists.');renderKanbanBoard();return;}
-  d.columns[colIdx]=n;
-  d.cards[n]=d.cards[oldName]||[];
-  delete d.cards[oldName];
-  saveKanban();renderKanbanBoard();
-}
-
-function deleteKbCol(colIdx){
-  if(!kanbanOpenPid)return;
-  const d=ensureBoard(kanbanOpenPid);
-  const name=d.columns[colIdx];
-  const cardCount=(d.cards[name]||[]).length;
-  const msg=cardCount?`Delete "${name}" and its ${cardCount} card(s)?`:`Delete empty column "${name}"?`;
-  if(!confirm(msg))return;
-  d.columns.splice(colIdx,1);
-  delete d.cards[name];
-  saveKanban();renderKanbanBoard();
-}
-
-/* Card CRUD */
-function addKbCard(colIdx){
-  if(!kanbanOpenPid)return;
-  const d=ensureBoard(kanbanOpenPid);
-  const colName=d.columns[colIdx];
-  const now=new Date();
-  const time=now.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-  d.cards[colName].unshift({id:'k'+Date.now(),text:'',color:'yellow',time});
-  saveKanban();renderKanbanBoard();
-  setTimeout(()=>{
-    const first=document.querySelector(`.kb-col[data-col="${colIdx}"] .kb-card-text`);
-    if(first)first.focus();
-  },50);
-}
-
-function updateKbCardText(colIdx,cardId,text){
-  const d=ensureBoard(kanbanOpenPid);
-  const colName=d.columns[colIdx];
-  const c=(d.cards[colName]||[]).find(c=>c.id===cardId);
-  if(!c)return;
-  c.text=text;
-  saveKanban();
-}
-
-function setKbCardColor(colIdx,cardId,color,e){
-  e.stopPropagation();
-  const d=ensureBoard(kanbanOpenPid);
-  const colName=d.columns[colIdx];
-  const c=(d.cards[colName]||[]).find(c=>c.id===cardId);
-  if(!c)return;
-  c.color=color;
-  saveKanban();
-  const el=document.querySelector(`.kb-card[data-cid="${cardId}"]`);
-  if(el){
-    KANBAN_COLORS.forEach(k=>el.classList.remove('color-'+k));
-    el.classList.add('color-'+color);
-  }
-}
-
-function deleteKbCard(colIdx,cardId,e){
-  e.stopPropagation();
-  const d=ensureBoard(kanbanOpenPid);
-  const colName=d.columns[colIdx];
-  d.cards[colName]=(d.cards[colName]||[]).filter(c=>c.id!==cardId);
-  saveKanban();renderKanbanBoard();
-}
-
-function moveKbCard(fromIdx,toIdx,cardId){
-  if(!kanbanOpenPid||fromIdx===toIdx)return;
-  const d=ensureBoard(kanbanOpenPid);
-  const fromName=d.columns[fromIdx];
-  const toName=d.columns[toIdx];
-  const idx=(d.cards[fromName]||[]).findIndex(c=>c.id===cardId);
-  if(idx===-1)return;
-  const [card]=d.cards[fromName].splice(idx,1);
-  d.cards[toName].unshift(card);
-  saveKanban();renderKanbanBoard();
-}
-
-// Close kanban on Escape
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&kanbanOpenPid)closeKanban();
 });
 
-/* ── Init ── */
-// Apply saved theme before creating nodes
-const _t=localStorage.getItem('kd-theme');
-if(_t&&THEMES[_t]){
-  currentTheme=_t;
-  Object.entries(THEMES[_t].vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
-}
-
-buildThemePicker();
-initNodes.forEach(n=>{nodes.push(n);createNodeEl(n);});
-initEdges.forEach(e=>edges.push(e));
-loadSavedState();
-loadTeam();
-initTeamCanvas();
-loadProjects();
-initProjectsCanvas();
-loadKanban();
-loadNcData();
-initNodeCanvas();
-
-// Restore last view mode
-const _vm=localStorage.getItem('kd-view-mode');
-if(_vm==='team')switchView('team');
-else if(_vm==='projects')switchView('projects');
-
-// Sync swatch dot to current theme
-document.getElementById('theme-swatch').style.background=THEMES[currentTheme].accent;
-
-setTimeout(()=>{updateAll();updateProgress();},100);
+// ── Init ──
+loadNews();
+// Refresh every 5 minutes
+setInterval(loadNews, 5 * 60 * 1000);
 </script>
+
 </body>
 </html>

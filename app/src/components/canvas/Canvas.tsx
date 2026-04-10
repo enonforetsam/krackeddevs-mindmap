@@ -2,12 +2,19 @@
 
 import { useRef, useState, useCallback, type ReactNode, type MouseEvent, type WheelEvent } from 'react'
 
+export interface PanZoom {
+  pan: { x: number; y: number }
+  zoom: number
+}
+
 interface CanvasProps {
   children: ReactNode
   className?: string
+  overlay?: (pz: PanZoom) => ReactNode
+  onPanZoomChange?: (pz: PanZoom) => void
 }
 
-export default function Canvas({ children, className = '' }: CanvasProps) {
+export default function Canvas({ children, className = '', overlay, onPanZoomChange }: CanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [pan, setPan] = useState({ x: 80, y: 80 })
   const [zoom, setZoom] = useState(1)
@@ -22,10 +29,12 @@ export default function Canvas({ children, className = '' }: CanvasProps) {
     panOrigin.current = { ...pan }
 
     const onMove = (ev: globalThis.MouseEvent) => {
-      setPan({
+      const newPan = {
         x: panOrigin.current.x + (ev.clientX - panStart.current.x),
         y: panOrigin.current.y + (ev.clientY - panStart.current.y),
-      })
+      }
+      setPan(newPan)
+      onPanZoomChange?.({ pan: newPan, zoom })
     }
     const onUp = () => {
       setPanning(false)
@@ -34,7 +43,7 @@ export default function Canvas({ children, className = '' }: CanvasProps) {
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
-  }, [pan])
+  }, [pan, zoom, onPanZoomChange])
 
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
@@ -43,12 +52,14 @@ export default function Canvas({ children, className = '' }: CanvasProps) {
     const mx = e.clientX - rect.left
     const my = e.clientY - rect.top
     const newZoom = Math.min(Math.max(zoom * (e.deltaY < 0 ? 1.1 : 0.9), 0.3), 3)
-    setPan({
+    const newPan = {
       x: mx - (mx - pan.x) * (newZoom / zoom),
       y: my - (my - pan.y) * (newZoom / zoom),
-    })
+    }
+    setPan(newPan)
     setZoom(newZoom)
-  }, [pan, zoom])
+    onPanZoomChange?.({ pan: newPan, zoom: newZoom })
+  }, [pan, zoom, onPanZoomChange])
 
   return (
     <div
@@ -59,9 +70,12 @@ export default function Canvas({ children, className = '' }: CanvasProps) {
         backgroundImage: 'radial-gradient(circle, var(--grid-c) 1px, transparent 1px)',
         backgroundSize: '24px 24px',
       }}
+      data-canvas-zoom={zoom}
       onMouseDown={handleMouseDown}
       onWheel={handleWheel}
     >
+      {overlay?.({ pan, zoom })}
+
       <div
         style={{
           position: 'absolute',
