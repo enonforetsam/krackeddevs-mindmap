@@ -2,6 +2,7 @@
 
 import type { MindMapNode, Edge } from '@/lib/types'
 import type { PanZoom } from '@/components/canvas/Canvas'
+import { resolveNodeColor } from '@/lib/themes'
 
 const NODE_W = 220
 const NODE_H = 100
@@ -38,7 +39,8 @@ export default function EdgeLayer({ edges, nodes, panZoom }: EdgeLayerProps) {
         const y2 = pan.y + (tgt.y + NODE_H / 2) * zoom
 
         const dashed = edge.edge_type === 'supports'
-        const strokeColor = src.color || '#505068'
+        const resolved = resolveNodeColor(src.color)
+        const strokeColor = resolved ? resolved.border : (src.color || '#505068')
 
         return (
           <line

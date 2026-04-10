@@ -12,8 +12,8 @@
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#08080c;
-  --panel-bg:rgba(12,12,18,.95);
+  --bg:#131318;
+  --panel-bg:rgba(22,22,30,.95);
   --panel-border:rgba(255,165,0,.08);
   --card-bg:rgba(255,255,255,.02);
   --card-hover:rgba(255,165,0,.04);
@@ -30,6 +30,75 @@
   --glow-orange:0 0 20px rgba(255,106,0,.15);
   --mono:'JetBrains Mono',monospace;
   --sans:'Inter',sans-serif;
+  --grid-color:rgba(255,106,0,.06);
+  --ticker-bg:rgba(22,22,30,.98);
+  --hud-bg:rgba(20,20,28,.85);
+  --mask-color:#131318;
+}
+
+/* ── Light Mode ── */
+[data-mode="light"]{
+  --bg:#f0f0f4;
+  --panel-bg:rgba(255,255,255,.95);
+  --panel-border:rgba(255,106,0,.12);
+  --card-bg:rgba(0,0,0,.02);
+  --card-hover:rgba(255,106,0,.06);
+  --card-border:rgba(255,106,0,.1);
+  --text-primary:rgba(0,0,0,.85);
+  --text-secondary:rgba(0,0,0,.5);
+  --text-muted:rgba(0,0,0,.25);
+  --accent:#e05500;
+  --accent2:#c44800;
+  --cyber-green:#059652;
+  --cyber-red:#dc2626;
+  --cyber-purple:#7c3aed;
+  --cyber-blue:#0284c7;
+  --grid-color:rgba(255,106,0,.08);
+  --ticker-bg:rgba(255,255,255,.98);
+  --hud-bg:rgba(255,255,255,.9);
+  --mask-color:#f0f0f4;
+}
+
+[data-mode="light"] .leaflet-control-attribution{
+  background:rgba(255,255,255,.8)!important;
+  color:rgba(0,0,0,.3)!important;
+}
+[data-mode="light"] .leaflet-control-attribution a{color:rgba(0,0,0,.4)!important}
+
+[data-mode="light"] .state-tooltip{
+  background:rgba(255,255,255,.95)!important;
+  border-color:rgba(255,106,0,.3)!important;
+  color:var(--accent2)!important;
+  box-shadow:0 4px 16px rgba(0,0,0,.12)!important;
+}
+
+[data-mode="light"] .ticker-bar{
+  background:linear-gradient(90deg,rgba(255,106,0,.04),var(--ticker-bg) 30%,var(--ticker-bg) 70%,rgba(255,106,0,.04));
+}
+
+[data-mode="light"] .ticker-item .headline{color:rgba(0,0,0,.55)}
+[data-mode="light"] .ticker-sep{color:rgba(255,106,0,.12)}
+
+[data-mode="light"] .corner-deco::before,
+[data-mode="light"] .corner-deco::after{background:rgba(255,106,0,.15)}
+
+[data-mode="light"] .news-panel::before{
+  background:linear-gradient(180deg,transparent,rgba(255,106,0,.2) 30%,rgba(255,106,0,.2) 70%,transparent);
+}
+
+[data-mode="light"] .cat-politics{background:rgba(220,38,38,.06);color:#dc2626;border-color:rgba(220,38,38,.12)}
+[data-mode="light"] .cat-economy{background:rgba(5,150,82,.06);color:#059652;border-color:rgba(5,150,82,.12)}
+[data-mode="light"] .cat-tech{background:rgba(2,132,199,.06);color:#0284c7;border-color:rgba(2,132,199,.12)}
+[data-mode="light"] .cat-sports{background:rgba(217,119,6,.06);color:#d97706;border-color:rgba(217,119,6,.12)}
+[data-mode="light"] .cat-world{background:rgba(124,58,237,.06);color:#7c3aed;border-color:rgba(124,58,237,.12)}
+
+[data-mode="light"] .skeleton{
+  background:linear-gradient(90deg,rgba(0,0,0,.03) 25%,rgba(0,0,0,.06) 50%,rgba(0,0,0,.03) 75%);
+  background-size:200% 100%;
+}
+
+[data-mode="light"] body::after{
+  background:none;
 }
 
 body{
@@ -65,7 +134,7 @@ body::after{
    ══════════════════════════════ */
 .ticker-bar{
   height:32px;
-  background:linear-gradient(90deg,rgba(255,106,0,.06),rgba(12,12,18,.98) 30%,rgba(12,12,18,.98) 70%,rgba(255,106,0,.06));
+  background:linear-gradient(90deg,rgba(255,106,0,.06),var(--ticker-bg) 30%,var(--ticker-bg) 70%,rgba(255,106,0,.06));
   border-bottom:1px solid rgba(255,106,0,.1);
   display:flex;
   align-items:center;
@@ -272,10 +341,48 @@ body::after{
   z-index:0;
 }
 
+/* Grid overlay on map */
+.map-grid{
+  position:absolute;
+  inset:0;
+  z-index:450;
+  pointer-events:none;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+}
+
+/* Mode toggle */
+.mode-toggle{
+  width:32px;height:32px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:4px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .2s;
+  color:var(--text-muted);
+  margin-left:8px;
+  flex-shrink:0;
+}
+
+.mode-toggle:hover{
+  background:rgba(255,106,0,.08);
+  border-color:rgba(255,106,0,.2);
+  color:var(--accent);
+}
+
+.mode-toggle svg{width:15px;height:15px}
+
 .leaflet-control-zoom{display:none}
 .leaflet-control-attribution{
-  background:rgba(8,8,12,.8)!important;
-  color:rgba(255,255,255,.15)!important;
+  background:var(--hud-bg)!important;
+  color:var(--text-muted)!important;
   font-size:8px!important;
   font-family:var(--mono)!important;
 }
@@ -308,7 +415,7 @@ body::after{
 .map-hud-bl{bottom:16px;left:16px}
 
 .hud-box{
-  background:rgba(8,8,12,.85);
+  background:var(--hud-bg);
   backdrop-filter:blur(8px);
   border:1px solid rgba(255,106,0,.1);
   border-radius:4px;
@@ -384,7 +491,7 @@ body::after{
   display:flex;
   gap:4px;
   padding:4px;
-  background:rgba(8,8,12,.85);
+  background:var(--hud-bg);
   border:1px solid rgba(255,106,0,.1);
   border-radius:4px;
   backdrop-filter:blur(8px);
@@ -715,12 +822,18 @@ body::after{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
     <input type="text" placeholder="Search headlines..." id="search-input"/>
   </div>
+  <button class="mode-toggle" id="mode-toggle" title="Toggle light/dark mode">
+    <svg id="mode-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <svg id="mode-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
 </div>
 
 <!-- ══ MAIN ══ -->
 <div class="main">
   <!-- Map -->
   <div id="map">
+    <!-- Grid overlay -->
+    <div class="map-grid"></div>
     <!-- Corner decorations -->
     <div class="corner-deco tl"></div>
     <div class="corner-deco tr"></div>
@@ -957,61 +1070,59 @@ map.on('zoomend', () => {
 });
 
 // ── Tile Themes ──
-const THEMES = {
+function getMaskColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--mask-color').trim();
+}
+
+const TILE_THEMES = {
   dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-    attr: '&copy; OSM &copy; CARTO',
-    subdomains: 'abcd',
-    maskFill: '#08080c',
-    stateFill: 'rgba(255,106,0,0.06)',
-    stateStroke: 'rgba(255,106,0,0.3)',
-    hoverFill: 'rgba(255,106,0,0.15)',
-    hoverStroke: '#ff6a00',
+    dark: { url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', sub: 'abcd' },
+    light: { url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', sub: 'abcd' },
+    stateFill: 'rgba(255,106,0,0.06)', stateStroke: 'rgba(255,106,0,0.3)',
+    hoverFill: 'rgba(255,106,0,0.15)', hoverStroke: '#ff6a00',
+    lightStateFill: 'rgba(255,106,0,0.08)', lightStateStroke: 'rgba(224,85,0,0.35)',
+    lightHoverFill: 'rgba(255,106,0,0.18)', lightHoverStroke: '#e05500',
   },
   satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attr: '&copy; Esri',
-    subdomains: null,
-    maskFill: '#08080c',
-    stateFill: 'rgba(255,106,0,0.05)',
-    stateStroke: 'rgba(255,165,0,0.5)',
-    hoverFill: 'rgba(255,106,0,0.15)',
-    hoverStroke: '#ff9d00',
+    dark: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', sub: null },
+    light: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', sub: null },
+    stateFill: 'rgba(255,106,0,0.05)', stateStroke: 'rgba(255,165,0,0.5)',
+    hoverFill: 'rgba(255,106,0,0.15)', hoverStroke: '#ff9d00',
+    lightStateFill: 'rgba(255,106,0,0.08)', lightStateStroke: 'rgba(255,165,0,0.6)',
+    lightHoverFill: 'rgba(255,106,0,0.2)', lightHoverStroke: '#e05500',
   },
   midnight: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attr: '&copy; OSM &copy; CARTO',
-    subdomains: 'abcd',
-    maskFill: '#08080c',
-    stateFill: 'rgba(168,85,247,0.06)',
-    stateStroke: 'rgba(168,85,247,0.3)',
-    hoverFill: 'rgba(168,85,247,0.15)',
-    hoverStroke: '#a855f7',
+    dark: { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', sub: 'abcd' },
+    light: { url: 'https://{s}.basemaps.cartocdn.com/voyager_nolabels/{z}/{x}/{y}{r}.png', sub: 'abcd' },
+    stateFill: 'rgba(168,85,247,0.06)', stateStroke: 'rgba(168,85,247,0.3)',
+    hoverFill: 'rgba(168,85,247,0.15)', hoverStroke: '#a855f7',
+    lightStateFill: 'rgba(124,58,237,0.08)', lightStateStroke: 'rgba(124,58,237,0.35)',
+    lightHoverFill: 'rgba(124,58,237,0.18)', lightHoverStroke: '#7c3aed',
   },
   topo: {
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attr: '&copy; OpenTopoMap',
-    subdomains: 'abc',
-    maskFill: '#08080c',
-    stateFill: 'rgba(255,106,0,0.05)',
-    stateStroke: 'rgba(255,106,0,0.4)',
-    hoverFill: 'rgba(255,106,0,0.15)',
-    hoverStroke: '#ff6a00',
+    dark: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', sub: 'abc' },
+    light: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', sub: 'abc' },
+    stateFill: 'rgba(255,106,0,0.05)', stateStroke: 'rgba(255,106,0,0.4)',
+    hoverFill: 'rgba(255,106,0,0.15)', hoverStroke: '#ff6a00',
+    lightStateFill: 'rgba(224,85,0,0.08)', lightStateStroke: 'rgba(224,85,0,0.4)',
+    lightHoverFill: 'rgba(224,85,0,0.18)', lightHoverStroke: '#c44800',
   },
 };
 
 let currentTheme = 'dark';
+let currentMode = 'dark';
 let tileLayer = null;
 let maskLayer = null;
 let geojsonLayer = null;
 let malaysiaGeoData = null;
 
 function applyTileLayer(key) {
-  const t = THEMES[key];
+  const t = TILE_THEMES[key];
+  const variant = t[currentMode];
   if (tileLayer) map.removeLayer(tileLayer);
-  const opts = { attribution: t.attr, maxZoom: 19 };
-  if (t.subdomains) opts.subdomains = t.subdomains;
-  tileLayer = L.tileLayer(t.url, opts).addTo(map);
+  const opts = { attribution: '&copy; OSM', maxZoom: 19 };
+  if (variant.sub) opts.subdomains = variant.sub;
+  tileLayer = L.tileLayer(variant.url, opts).addTo(map);
 }
 
 applyTileLayer('dark');
@@ -1034,7 +1145,7 @@ function buildMask(geojson, fillColor) {
 function applyMask() {
   if (!malaysiaGeoData) return;
   if (maskLayer) map.removeLayer(maskLayer);
-  maskLayer = buildMask(malaysiaGeoData, THEMES[currentTheme].maskFill);
+  maskLayer = buildMask(malaysiaGeoData, getMaskColor());
   maskLayer.addTo(map);
   if (geojsonLayer) geojsonLayer.bringToFront();
 }
@@ -1044,10 +1155,19 @@ const GEOJSON_URL = 'https://raw.githubusercontent.com/dosm-malaysia/data-open/m
 const FALLBACK_URL = 'https://raw.githubusercontent.com/Skyjacker/my-states-geojson/master/malaysia.state.geojson';
 
 function getStyles() {
-  const t = THEMES[currentTheme];
+  const t = TILE_THEMES[currentTheme];
+  const isLight = currentMode === 'light';
   return {
-    default: { fillColor: t.stateFill, color: t.stateStroke, weight: 1, fillOpacity: 1 },
-    hover: { fillColor: t.hoverFill, color: t.hoverStroke, weight: 2, fillOpacity: 1 },
+    default: {
+      fillColor: isLight ? t.lightStateFill : t.stateFill,
+      color: isLight ? t.lightStateStroke : t.stateStroke,
+      weight: 1, fillOpacity: 1,
+    },
+    hover: {
+      fillColor: isLight ? t.lightHoverFill : t.hoverFill,
+      color: isLight ? t.lightHoverStroke : t.hoverStroke,
+      weight: 2, fillOpacity: 1,
+    },
   };
 }
 
@@ -1096,6 +1216,21 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
     applyTileLayer(currentTheme);
     refreshGeoJSONStyles();
   });
+});
+
+// ── Light/Dark Mode Toggle ──
+document.getElementById('mode-toggle').addEventListener('click', () => {
+  currentMode = currentMode === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-mode', currentMode);
+
+  // Toggle icons
+  document.getElementById('mode-icon-sun').style.display = currentMode === 'light' ? 'block' : 'none';
+  document.getElementById('mode-icon-moon').style.display = currentMode === 'dark' ? 'block' : 'none';
+
+  // Re-apply tile layer + mask + state styles for new mode
+  applyTileLayer(currentTheme);
+  // Small delay to let CSS vars update before reading --mask-color
+  requestAnimationFrame(() => refreshGeoJSONStyles());
 });
 
 // ── Init ──

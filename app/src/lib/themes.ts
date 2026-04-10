@@ -243,3 +243,28 @@ export function textColorFor(hex: string): string {
   const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
   return lum > 0.55 ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,.95)'
 }
+
+export function isLightColor(hex: string): boolean {
+  const c = hex.replace('#', '')
+  const r = parseInt(c.substr(0, 2), 16)
+  const g = parseInt(c.substr(2, 2), 16)
+  const b = parseInt(c.substr(4, 2), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55
+}
+
+/** Resolve a node's color key/hex to full palette entry */
+export function resolveNodeColor(nodeColor: string | undefined | null) {
+  const entry = NODE_COLORS.find(c => c.key === nodeColor || c.border === nodeColor || c.bg === nodeColor)
+  if (!entry) return null
+  const light = isLightColor(entry.bg)
+  return {
+    bg: entry.bg,
+    border: entry.border,
+    text: light ? 'rgba(0,0,0,.85)' : 'rgba(255,255,255,.95)',
+    desc: light ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)',
+    link: light ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.4)',
+    divider: light ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.15)',
+    dot: light ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.3)',
+    menuBtn: light ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.5)',
+  }
+}

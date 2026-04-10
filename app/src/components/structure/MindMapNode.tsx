@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, memo } from 'react'
 import type { MindMapNode as NodeType } from '@/lib/types'
-import { NODE_COLORS, textColorFor } from '@/lib/themes'
+import { NODE_COLORS, textColorFor, resolveNodeColor } from '@/lib/themes'
 
 interface MindMapNodeProps {
   node: NodeType
@@ -36,14 +36,17 @@ function MindMapNodeCardInner({
   const [pos, setPos] = useState({ x: node.x, y: node.y })
   const posRef = useRef(pos)
 
-  // Resolve node color — node.color stores a key like 'blue' or a hex like '#2563eb'
-  const colorEntry = NODE_COLORS.find(c => c.key === node.color || c.border === node.color || c.bg === node.color)
-  const hasCustomColor = !!colorEntry
-  const nodeBg = hasCustomColor ? colorEntry.bg : 'var(--panel-bg)'
-  const nodeBorder = hasCustomColor ? colorEntry.border : (node.color || '#505068')
-  const nodeTextColor = hasCustomColor ? textColorFor(colorEntry.bg) : 'var(--modal-title)'
-  const nodeDescColor = hasCustomColor ? (textColorFor(colorEntry.bg) === 'rgba(0,0,0,.85)' ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)') : 'var(--node-desc)'
-  const dotColor = hasCustomColor ? 'rgba(255,255,255,.3)' : nodeBorder
+  // Resolve node color
+  const resolved = resolveNodeColor(node.color)
+  const hasCustomColor = !!resolved
+  const nodeBg = resolved ? resolved.bg : 'var(--panel-bg)'
+  const nodeBorder = resolved ? resolved.border : (node.color || '#505068')
+  const nodeTextColor = resolved ? resolved.text : 'var(--modal-title)'
+  const nodeDescColor = resolved ? resolved.desc : 'var(--node-desc)'
+  const nodeLinkColor = resolved ? resolved.link : 'var(--accent)'
+  const nodeDivider = resolved ? resolved.divider : 'var(--node-link-border)'
+  const dotColor = resolved ? resolved.dot : nodeBorder
+  const menuBtnColor = resolved ? resolved.menuBtn : 'var(--btn-c)'
 
   const rafId = useRef(0)
 
@@ -165,13 +168,12 @@ function MindMapNodeCardInner({
             style={{
               background: 'transparent',
               border: 'none',
-              color: hasCustomColor ? nodeTextColor : 'var(--btn-c)',
+              color: menuBtnColor,
               cursor: 'pointer',
               fontSize: 16,
               lineHeight: 1,
               padding: '0 2px',
               flexShrink: 0,
-              opacity: 0.6,
             }}
           >
             &#x22EF;
@@ -203,8 +205,8 @@ function MindMapNodeCardInner({
         <div
           style={{
             fontSize: 10,
-            color: hasCustomColor ? nodeDescColor : 'var(--accent)',
-            borderTop: `1px solid ${hasCustomColor ? 'rgba(255,255,255,.15)' : 'var(--node-link-border)'}`,
+            color: nodeLinkColor,
+            borderTop: `1px solid ${nodeDivider}`,
             paddingTop: 6,
             marginTop: 4,
             overflow: 'hidden',
