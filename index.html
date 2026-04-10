@@ -3,142 +3,399 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Malaysia News</title>
+<title>KRACKED NEWS MALAYSIA</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#0a0a0f;
-  --panel-bg:#111118;
-  --panel-border:rgba(255,255,255,.06);
-  --card-bg:rgba(255,255,255,.03);
-  --card-hover:rgba(255,255,255,.06);
-  --card-border:rgba(255,255,255,.05);
-  --text-primary:rgba(255,255,255,.9);
-  --text-secondary:rgba(255,255,255,.5);
-  --text-muted:rgba(255,255,255,.3);
-  --accent:#3b82f6;
-  --accent-glow:rgba(59,130,246,.15);
-  --red:#ef4444;
-  --green:#22c55e;
-  --yellow:#eab308;
-  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --radius:10px;
+  --bg:#08080c;
+  --panel-bg:rgba(12,12,18,.95);
+  --panel-border:rgba(255,165,0,.08);
+  --card-bg:rgba(255,255,255,.02);
+  --card-hover:rgba(255,165,0,.04);
+  --card-border:rgba(255,165,0,.06);
+  --text-primary:rgba(255,255,255,.88);
+  --text-secondary:rgba(255,255,255,.45);
+  --text-muted:rgba(255,255,255,.2);
+  --accent:#ff6a00;
+  --accent2:#ff9d00;
+  --cyber-blue:#00d4ff;
+  --cyber-green:#00ff88;
+  --cyber-red:#ff2244;
+  --cyber-purple:#a855f7;
+  --glow-orange:0 0 20px rgba(255,106,0,.15);
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
 }
 
 body{
   background:var(--bg);
-  font-family:var(--font);
+  font-family:var(--mono);
   color:var(--text-primary);
   overflow:hidden;
   height:100vh;
   -webkit-font-smoothing:antialiased;
 }
 
-/* ── Layout ── */
-.layout{
-  display:flex;
-  height:100vh;
+/* ── Scanline overlay ── */
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,.03) 2px,
+    rgba(0,0,0,.03) 4px
+  );
+  pointer-events:none;
+  z-index:9999;
 }
 
-/* ── Map Section ── */
-.map-section{
+/* ── Layout ── */
+.layout{display:flex;flex-direction:column;height:100vh}
+
+/* ══════════════════════════════
+   TOP TICKER BAR
+   ══════════════════════════════ */
+.ticker-bar{
+  height:32px;
+  background:linear-gradient(90deg,rgba(255,106,0,.06),rgba(12,12,18,.98) 30%,rgba(12,12,18,.98) 70%,rgba(255,106,0,.06));
+  border-bottom:1px solid rgba(255,106,0,.1);
+  display:flex;
+  align-items:center;
+  flex-shrink:0;
+  overflow:hidden;
+  position:relative;
+  z-index:100;
+}
+
+.ticker-badge{
+  background:var(--cyber-red);
+  color:#fff;
+  font-size:9px;
+  font-weight:800;
+  padding:3px 10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  z-index:2;
+}
+
+.ticker-badge::after{
+  content:'';
+  width:6px;height:6px;
+  background:#fff;
+  border-radius:50%;
+  animation:tickerPulse 1.5s infinite;
+}
+
+@keyframes tickerPulse{0%,100%{opacity:1}50%{opacity:.2}}
+
+.ticker-scroll{
   flex:1;
+  overflow:hidden;
+  position:relative;
+  height:100%;
+  mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);
+}
+
+.ticker-track{
+  display:flex;
+  align-items:center;
+  height:100%;
+  gap:32px;
+  animation:scroll 60s linear infinite;
+  white-space:nowrap;
+  width:max-content;
+}
+
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+.ticker-item{
+  font-size:11px;
+  color:var(--text-secondary);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-shrink:0;
+}
+
+.ticker-item .src{color:var(--accent);font-weight:700;text-transform:uppercase;font-size:9px;letter-spacing:.05em}
+.ticker-item .headline{color:rgba(255,255,255,.6)}
+.ticker-sep{color:rgba(255,165,0,.15);font-size:8px}
+
+.ticker-stats{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:0 16px;
+  flex-shrink:0;
+  border-left:1px solid rgba(255,165,0,.08);
+  height:100%;
+}
+
+.ticker-stat{
+  font-size:10px;
+  color:var(--text-muted);
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.ticker-stat .val{color:var(--cyber-green);font-weight:700}
+.ticker-stat .val.red{color:var(--cyber-red)}
+
+/* ══════════════════════════════
+   NAV BAR
+   ══════════════════════════════ */
+.nav-bar{
+  height:44px;
+  background:var(--panel-bg);
+  border-bottom:1px solid var(--panel-border);
+  display:flex;
+  align-items:center;
+  padding:0 12px;
+  gap:4px;
+  flex-shrink:0;
+  z-index:100;
+}
+
+.nav-brand{
+  font-size:13px;
+  font-weight:800;
+  color:var(--accent);
+  letter-spacing:-.02em;
+  padding:0 12px 0 4px;
+  border-right:1px solid var(--panel-border);
+  margin-right:8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--mono);
+}
+
+.nav-brand .dot{
+  width:7px;height:7px;
+  background:var(--cyber-green);
+  border-radius:50%;
+  box-shadow:0 0 8px rgba(0,255,136,.4);
+}
+
+.nav-tab{
+  font-size:11px;
+  font-weight:600;
+  padding:6px 14px;
+  border-radius:4px;
+  border:1px solid transparent;
+  background:none;
+  color:var(--text-muted);
+  cursor:pointer;
+  transition:all .15s;
+  font-family:var(--mono);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.nav-tab:hover{color:var(--text-secondary);background:rgba(255,255,255,.03)}
+.nav-tab.active{color:var(--accent);border-color:rgba(255,106,0,.2);background:rgba(255,106,0,.05)}
+
+.nav-tab.live{
+  color:var(--cyber-red);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.nav-tab.live::before{
+  content:'';
+  width:6px;height:6px;
+  background:var(--cyber-red);
+  border-radius:50%;
+  animation:tickerPulse 1.5s infinite;
+}
+
+.nav-spacer{flex:1}
+
+.nav-search{
+  position:relative;
+  width:220px;
+}
+
+.nav-search input{
+  width:100%;
+  padding:6px 10px 6px 30px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:4px;
+  color:var(--text-primary);
+  font-size:11px;
+  font-family:var(--mono);
+  outline:none;
+  transition:border-color .2s;
+}
+
+.nav-search input::placeholder{color:var(--text-muted)}
+.nav-search input:focus{border-color:rgba(255,106,0,.3)}
+
+.nav-search svg{
+  position:absolute;
+  left:9px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--text-muted);
+  width:13px;height:13px;
+}
+
+/* ══════════════════════════════
+   MAIN CONTENT
+   ══════════════════════════════ */
+.main{
+  flex:1;
+  display:flex;
   position:relative;
   overflow:hidden;
 }
 
-.map-section::before{
-  content:'';
-  position:absolute;
-  inset:0;
-  background:radial-gradient(ellipse at 40% 50%, rgba(59,130,246,.04) 0%, transparent 70%);
-  pointer-events:none;
-}
-
-.map-header{
-  position:absolute;
-  top:32px;
-  left:40px;
-  z-index:1000;
-  pointer-events:none;
-}
-
-.map-header h1{
-  font-size:22px;
-  font-weight:800;
-  letter-spacing:-.03em;
-  color:var(--text-primary);
-}
-
-.map-header h1 span{
-  color:var(--accent);
-}
-
-.map-header p{
-  font-size:12px;
-  color:var(--text-muted);
-  margin-top:4px;
-  letter-spacing:.03em;
-  text-transform:uppercase;
-}
-
+/* ── Map ── */
 #map{
-  width:100%;
-  height:100%;
-  position:absolute;
-  inset:0;
+  flex:1;
+  position:relative;
   z-index:0;
 }
 
 .leaflet-control-zoom{display:none}
 .leaflet-control-attribution{
-  background:rgba(10,10,15,.7)!important;
-  color:rgba(255,255,255,.2)!important;
-  font-size:9px!important;
+  background:rgba(8,8,12,.8)!important;
+  color:rgba(255,255,255,.15)!important;
+  font-size:8px!important;
+  font-family:var(--mono)!important;
 }
-.leaflet-control-attribution a{color:rgba(255,255,255,.3)!important}
+.leaflet-control-attribution a{color:rgba(255,165,0,.25)!important}
 
 .state-tooltip{
-  background:rgba(15,15,22,.92)!important;
-  border:1px solid rgba(59,130,246,.3)!important;
-  color:rgba(255,255,255,.85)!important;
-  font-family:var(--font)!important;
-  font-size:12px!important;
+  background:rgba(12,12,18,.95)!important;
+  border:1px solid rgba(255,106,0,.3)!important;
+  color:var(--accent2)!important;
+  font-family:var(--mono)!important;
+  font-size:11px!important;
   font-weight:600!important;
-  padding:5px 10px!important;
-  border-radius:6px!important;
-  box-shadow:0 4px 12px rgba(0,0,0,.4)!important;
+  padding:5px 12px!important;
+  border-radius:3px!important;
+  box-shadow:0 0 20px rgba(255,106,0,.1),0 4px 12px rgba(0,0,0,.5)!important;
+  text-transform:uppercase!important;
+  letter-spacing:.05em!important;
 }
 .state-tooltip::before{display:none!important}
-.leaflet-tooltip-top:before{border-top-color:rgba(59,130,246,.3)!important}
 
-/* ── Theme Picker ── */
+/* ── Map HUD overlays ── */
+.map-hud{
+  position:absolute;
+  z-index:1000;
+  pointer-events:none;
+}
+
+.map-hud-tl{top:16px;left:16px}
+.map-hud-br{bottom:16px;right:16px}
+.map-hud-bl{bottom:16px;left:16px}
+
+.hud-box{
+  background:rgba(8,8,12,.85);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(255,106,0,.1);
+  border-radius:4px;
+  padding:10px 14px;
+  pointer-events:auto;
+}
+
+.hud-label{
+  font-size:9px;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  margin-bottom:4px;
+}
+
+.hud-value{
+  font-size:14px;
+  font-weight:700;
+  color:var(--accent);
+}
+
+.hud-coords{
+  font-size:10px;
+  color:var(--text-muted);
+  display:flex;
+  gap:12px;
+  margin-top:2px;
+}
+
+.hud-grid{
+  display:flex;
+  gap:16px;
+}
+
+.hud-grid .hud-box{display:flex;flex-direction:column;align-items:center}
+
+/* Corner decorations */
+.corner-deco{
+  position:absolute;
+  width:20px;height:20px;
+  z-index:1000;
+  pointer-events:none;
+}
+
+.corner-deco::before,.corner-deco::after{
+  content:'';
+  position:absolute;
+  background:rgba(255,106,0,.2);
+}
+
+.corner-deco.tl{top:8px;left:8px}
+.corner-deco.tl::before{top:0;left:0;width:20px;height:1px}
+.corner-deco.tl::after{top:0;left:0;width:1px;height:20px}
+
+.corner-deco.tr{top:8px;right:8px}
+.corner-deco.tr::before{top:0;right:0;width:20px;height:1px}
+.corner-deco.tr::after{top:0;right:0;width:1px;height:20px}
+
+.corner-deco.bl{bottom:8px;left:8px}
+.corner-deco.bl::before{bottom:0;left:0;width:20px;height:1px}
+.corner-deco.bl::after{bottom:0;left:0;width:1px;height:20px}
+
+.corner-deco.br{bottom:8px;right:8px}
+.corner-deco.br::before{bottom:0;right:0;width:20px;height:1px}
+.corner-deco.br::after{bottom:0;right:0;width:1px;height:20px}
+
+/* Theme picker */
 .theme-picker{
   position:absolute;
-  top:32px;
-  right:24px;
+  top:16px;
+  right:16px;
   z-index:1000;
   display:flex;
-  gap:6px;
-  background:rgba(10,10,15,.85);
+  gap:4px;
+  padding:4px;
+  background:rgba(8,8,12,.85);
+  border:1px solid rgba(255,106,0,.1);
+  border-radius:4px;
   backdrop-filter:blur(8px);
-  padding:6px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.06);
 }
 
 .theme-btn{
-  width:28px;height:28px;
-  border-radius:6px;
-  border:2px solid transparent;
+  width:24px;height:24px;
+  border-radius:3px;
+  border:1.5px solid transparent;
   cursor:pointer;
-  transition:border-color .2s, transform .15s;
-  position:relative;
+  transition:all .15s;
 }
 
 .theme-btn:hover{transform:scale(1.1)}
@@ -146,133 +403,87 @@ body{
 
 .theme-btn[data-theme="dark"]{background:linear-gradient(135deg,#1a1a2e,#16213e)}
 .theme-btn[data-theme="satellite"]{background:linear-gradient(135deg,#2d5016,#1a3a0a)}
-.theme-btn[data-theme="light"]{background:linear-gradient(135deg,#e0e0e0,#c0c0c0)}
+.theme-btn[data-theme="midnight"]{background:linear-gradient(135deg,#0f0f1a,#1a0a2d)}
 .theme-btn[data-theme="topo"]{background:linear-gradient(135deg,#2a4858,#1a3040)}
 
-.theme-btn::after{
-  content:attr(title);
-  position:absolute;
-  bottom:-22px;
-  left:50%;
-  transform:translateX(-50%);
-  font-size:9px;
-  color:var(--text-muted);
-  white-space:nowrap;
-  opacity:0;
-  transition:opacity .2s;
-  pointer-events:none;
-}
-
-.theme-btn:hover::after{opacity:1}
-
-/* Map stats bar */
-.map-stats{
-  position:absolute;
-  bottom:32px;
-  left:40px;
-  right:40px;
-  display:flex;
-  gap:24px;
-  z-index:1000;
-  pointer-events:none;
-}
-
-.stat{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-}
-
-.stat-label{
-  font-size:10px;
-  color:var(--text-muted);
-  text-transform:uppercase;
-  letter-spacing:.05em;
-}
-
-.stat-value{
-  font-size:14px;
-  font-weight:700;
-  color:var(--text-secondary);
-}
-
-.stat-value.live{
-  color:var(--red);
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-
-.live-dot{
-  width:6px;height:6px;
-  background:var(--red);
-  border-radius:50%;
-  animation:pulse 2s infinite;
-}
-
-@keyframes pulse{
-  0%,100%{opacity:1}
-  50%{opacity:.3}
-}
-
-/* ── News Panel ── */
+/* ══════════════════════════════
+   NEWS PANEL (right sidebar)
+   ══════════════════════════════ */
 .news-panel{
-  width:420px;
+  width:400px;
   background:var(--panel-bg);
   border-left:1px solid var(--panel-border);
   display:flex;
   flex-direction:column;
-  height:100vh;
+  flex-shrink:0;
+  position:relative;
+}
+
+/* Glow line on left edge */
+.news-panel::before{
+  content:'';
+  position:absolute;
+  top:0;bottom:0;left:-1px;
+  width:1px;
+  background:linear-gradient(180deg,transparent,rgba(255,106,0,.3) 30%,rgba(255,106,0,.3) 70%,transparent);
+  z-index:2;
 }
 
 .panel-header{
-  padding:24px 24px 0;
+  padding:16px 16px 0;
   flex-shrink:0;
 }
 
-.panel-title{
-  font-size:13px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.06em;
-  color:var(--text-secondary);
-  margin-bottom:16px;
+.panel-title-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
 }
 
-/* ── Tabs ── */
+.panel-title{
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:var(--accent);
+}
+
+.panel-count{
+  font-size:10px;
+  color:var(--text-muted);
+  margin-left:auto;
+}
+
+.panel-count span{color:var(--cyber-green);font-weight:700}
+
+/* Tabs */
 .tabs{
   display:flex;
-  gap:4px;
-  background:rgba(255,255,255,.03);
-  border-radius:8px;
-  padding:3px;
-  margin-bottom:16px;
+  gap:2px;
+  margin-bottom:12px;
 }
 
 .tab{
   flex:1;
-  padding:8px 12px;
-  font-size:12px;
+  padding:7px 8px;
+  font-size:10px;
   font-weight:600;
   color:var(--text-muted);
   background:none;
-  border:none;
-  border-radius:6px;
+  border:1px solid transparent;
+  border-radius:3px;
   cursor:pointer;
-  transition:all .2s;
-  font-family:var(--font);
+  transition:all .15s;
+  font-family:var(--mono);
+  text-transform:uppercase;
+  letter-spacing:.04em;
 }
 
-.tab:hover{
-  color:var(--text-secondary);
-}
+.tab:hover{color:var(--text-secondary);background:rgba(255,255,255,.02)}
+.tab.active{color:var(--accent);border-color:rgba(255,106,0,.15);background:rgba(255,106,0,.04)}
 
-.tab.active{
-  background:rgba(255,255,255,.07);
-  color:var(--text-primary);
-}
-
-/* ── Search ── */
+/* Search */
 .search-wrap{
   position:relative;
   margin-bottom:4px;
@@ -280,126 +491,36 @@ body{
 
 .search-wrap svg{
   position:absolute;
-  left:12px;
-  top:50%;
+  left:10px;top:50%;
   transform:translateY(-50%);
   color:var(--text-muted);
+  width:13px;height:13px;
 }
 
 .search-input{
   width:100%;
-  padding:10px 12px 10px 36px;
-  background:rgba(255,255,255,.03);
-  border:1px solid var(--card-border);
-  border-radius:8px;
+  padding:8px 10px 8px 32px;
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:3px;
   color:var(--text-primary);
-  font-size:13px;
-  font-family:var(--font);
+  font-size:11px;
+  font-family:var(--mono);
   outline:none;
   transition:border-color .2s;
 }
 
 .search-input::placeholder{color:var(--text-muted)}
-.search-input:focus{border-color:rgba(59,130,246,.4)}
+.search-input:focus{border-color:rgba(255,106,0,.3)}
 
-/* ── News Feed ── */
-.news-feed{
-  flex:1;
-  overflow-y:auto;
-  padding:12px 24px 24px;
-}
-
-.news-feed::-webkit-scrollbar{width:4px}
-.news-feed::-webkit-scrollbar-track{background:transparent}
-.news-feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px}
-
-.news-item{
-  padding:16px;
-  border-radius:var(--radius);
-  border:1px solid transparent;
-  cursor:pointer;
-  transition:all .2s;
-  margin-bottom:4px;
-  text-decoration:none;
-  display:block;
-  color:inherit;
-}
-
-.news-item:hover{
-  background:var(--card-hover);
-  border-color:var(--card-border);
-}
-
-.news-meta{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-}
-
-.news-source{
-  font-size:11px;
-  font-weight:600;
-  color:var(--accent);
-  text-transform:uppercase;
-  letter-spacing:.03em;
-}
-
-.news-time{
-  font-size:11px;
-  color:var(--text-muted);
-}
-
-.news-dot{
-  width:3px;height:3px;
-  background:var(--text-muted);
-  border-radius:50%;
-}
-
-.news-category{
-  font-size:10px;
-  font-weight:600;
-  padding:2px 7px;
-  border-radius:4px;
-  text-transform:uppercase;
-  letter-spacing:.04em;
-  margin-left:auto;
-}
-
-.cat-politics{background:rgba(239,68,68,.12);color:#f87171}
-.cat-economy{background:rgba(34,197,94,.12);color:#4ade80}
-.cat-tech{background:rgba(59,130,246,.12);color:#60a5fa}
-.cat-sports{background:rgba(234,179,8,.12);color:#facc15}
-.cat-world{background:rgba(168,85,247,.12);color:#c084fc}
-.cat-crime{background:rgba(249,115,22,.12);color:#fb923c}
-.cat-health{background:rgba(20,184,166,.12);color:#2dd4bf}
-
-.news-title{
-  font-size:14px;
-  font-weight:600;
-  line-height:1.45;
-  color:var(--text-primary);
-  margin-bottom:6px;
-  letter-spacing:-.01em;
-}
-
-.news-desc{
-  font-size:12px;
-  line-height:1.55;
-  color:var(--text-secondary);
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-
-/* ── Breaking banner ── */
+/* Breaking banner */
 .breaking-banner{
-  margin:0 24px 8px;
-  padding:10px 14px;
-  background:rgba(239,68,68,.08);
-  border:1px solid rgba(239,68,68,.15);
-  border-radius:8px;
+  margin:8px 16px;
+  padding:8px 12px;
+  background:rgba(255,34,68,.05);
+  border:1px solid rgba(255,34,68,.12);
+  border-left:2px solid var(--cyber-red);
+  border-radius:3px;
   display:flex;
   align-items:center;
   gap:10px;
@@ -407,139 +528,283 @@ body{
 }
 
 .breaking-badge{
-  font-size:10px;
+  font-size:9px;
   font-weight:800;
-  color:var(--red);
+  color:var(--cyber-red);
   text-transform:uppercase;
-  letter-spacing:.06em;
-  white-space:nowrap;
+  letter-spacing:.08em;
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:5px;
+  flex-shrink:0;
+}
+
+.breaking-badge::before{
+  content:'';
+  width:5px;height:5px;
+  background:var(--cyber-red);
+  border-radius:50%;
+  animation:tickerPulse 1.5s infinite;
 }
 
 .breaking-text{
-  font-size:12px;
-  color:rgba(255,255,255,.7);
+  font-size:11px;
+  color:rgba(255,255,255,.6);
   font-weight:500;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
-/* ── Loading ── */
+/* News feed */
+.news-feed{
+  flex:1;
+  overflow-y:auto;
+  padding:8px 16px 16px;
+}
+
+.news-feed::-webkit-scrollbar{width:3px}
+.news-feed::-webkit-scrollbar-track{background:transparent}
+.news-feed::-webkit-scrollbar-thumb{background:rgba(255,106,0,.15);border-radius:3px}
+
+.news-item{
+  padding:12px;
+  border-radius:3px;
+  border:1px solid transparent;
+  border-left:2px solid transparent;
+  cursor:pointer;
+  transition:all .15s;
+  margin-bottom:2px;
+  text-decoration:none;
+  display:block;
+  color:inherit;
+  position:relative;
+}
+
+.news-item:hover{
+  background:var(--card-hover);
+  border-color:var(--card-border);
+  border-left-color:var(--accent);
+}
+
+.news-meta{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
+}
+
+.news-source{
+  font-size:9px;
+  font-weight:700;
+  color:var(--accent);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.news-time{
+  font-size:9px;
+  color:var(--text-muted);
+  font-family:var(--mono);
+}
+
+.news-dot{
+  width:2px;height:2px;
+  background:var(--text-muted);
+  border-radius:50%;
+}
+
+.news-category{
+  font-size:8px;
+  font-weight:700;
+  padding:2px 6px;
+  border-radius:2px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin-left:auto;
+  font-family:var(--mono);
+}
+
+.cat-politics{background:rgba(255,34,68,.08);color:#ff6b7f;border:1px solid rgba(255,34,68,.12)}
+.cat-economy{background:rgba(0,255,136,.06);color:#00ff88;border:1px solid rgba(0,255,136,.1)}
+.cat-tech{background:rgba(0,212,255,.06);color:#00d4ff;border:1px solid rgba(0,212,255,.1)}
+.cat-sports{background:rgba(255,157,0,.06);color:#ff9d00;border:1px solid rgba(255,157,0,.1)}
+.cat-world{background:rgba(168,85,247,.06);color:#c084fc;border:1px solid rgba(168,85,247,.1)}
+
+.news-title{
+  font-size:12px;
+  font-weight:600;
+  line-height:1.45;
+  color:var(--text-primary);
+  margin-bottom:4px;
+  letter-spacing:-.01em;
+  font-family:var(--sans);
+}
+
+.news-desc{
+  font-size:11px;
+  line-height:1.5;
+  color:var(--text-secondary);
+  font-family:var(--sans);
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* Loading skeletons */
 .skeleton{
-  background:linear-gradient(90deg,rgba(255,255,255,.03) 25%,rgba(255,255,255,.06) 50%,rgba(255,255,255,.03) 75%);
+  background:linear-gradient(90deg,rgba(255,106,0,.02) 25%,rgba(255,106,0,.05) 50%,rgba(255,106,0,.02) 75%);
   background-size:200% 100%;
   animation:shimmer 1.5s infinite;
-  border-radius:6px;
+  border-radius:3px;
 }
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-@keyframes shimmer{
-  0%{background-position:200% 0}
-  100%{background-position:-200% 0}
-}
-
-.skeleton-item{padding:16px;margin-bottom:4px}
-.skeleton-bar{height:12px;margin-bottom:8px;border-radius:4px}
+.skeleton-item{padding:12px;margin-bottom:2px}
+.skeleton-bar{height:10px;margin-bottom:6px;border-radius:2px}
 .skeleton-bar.w60{width:60%}
 .skeleton-bar.w80{width:80%}
 .skeleton-bar.w100{width:100%}
-.skeleton-bar.short{height:10px;width:30%;margin-bottom:12px}
+.skeleton-bar.short{height:8px;width:25%;margin-bottom:10px}
 
-/* ── Empty state ── */
+/* Empty state */
 .empty-state{
   text-align:center;
   padding:60px 20px;
   color:var(--text-muted);
+  font-size:11px;
 }
-
-.empty-state svg{margin-bottom:12px;opacity:.3}
-.empty-state p{font-size:13px}
 
 /* ── Responsive ── */
 @media(max-width:900px){
-  .layout{flex-direction:column}
-  .map-section{height:45vh;padding:20px}
-  .news-panel{width:100%;height:55vh;border-left:none;border-top:1px solid var(--panel-border)}
-  .map-header{top:16px;left:20px}
-  .map-stats{bottom:16px;left:20px;right:20px}
+  .main{flex-direction:column}
+  #map{height:45vh}
+  .news-panel{width:100%;border-left:none;border-top:1px solid var(--panel-border)}
+  .ticker-stats{display:none}
 }
 </style>
 </head>
 <body>
 
+<!-- ══ TICKER BAR ══ -->
 <div class="layout">
-  <!-- Map Section -->
-  <section class="map-section">
-    <div class="map-header">
-      <h1>Malaysia<span>News</span></h1>
-      <p>Live headlines across the nation</p>
+<div class="ticker-bar">
+  <div class="ticker-badge">BREAKING</div>
+  <div class="ticker-scroll">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+  <div class="ticker-stats">
+    <div class="ticker-stat">ARTICLES <span class="val" id="stat-count">—</span></div>
+    <div class="ticker-stat">SOURCES <span class="val" id="stat-sources">—</span></div>
+    <div class="ticker-stat">UPD <span class="val" id="stat-time">—</span></div>
+  </div>
+</div>
+
+<!-- ══ NAV BAR ══ -->
+<div class="nav-bar">
+  <div class="nav-brand"><span class="dot"></span> KRACKED NEWS MY</div>
+  <button class="nav-tab active" data-tab="all">All</button>
+  <button class="nav-tab" data-tab="politics">Politics</button>
+  <button class="nav-tab" data-tab="economy">Economy</button>
+  <button class="nav-tab" data-tab="tech">Tech</button>
+  <button class="nav-tab" data-tab="sports">Sports</button>
+  <button class="nav-tab live">LIVE</button>
+  <div class="nav-spacer"></div>
+  <div class="nav-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" placeholder="Search headlines..." id="search-input"/>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <!-- Map -->
+  <div id="map">
+    <!-- Corner decorations -->
+    <div class="corner-deco tl"></div>
+    <div class="corner-deco tr"></div>
+    <div class="corner-deco bl"></div>
+    <div class="corner-deco br"></div>
+
+    <!-- HUD overlays -->
+    <div class="map-hud map-hud-tl">
+      <div class="hud-box">
+        <div class="hud-label">Region</div>
+        <div class="hud-value" id="hud-region">MALAYSIA</div>
+        <div class="hud-coords">
+          <span>LAT <span style="color:var(--text-secondary)">4.2105°</span></span>
+          <span>LNG <span style="color:var(--text-secondary)">108.9758°</span></span>
+        </div>
+      </div>
     </div>
 
-    <div id="map"></div>
+    <div class="map-hud map-hud-bl">
+      <div class="hud-grid">
+        <div class="hud-box">
+          <div class="hud-label">Status</div>
+          <div class="hud-value" style="color:var(--cyber-green);font-size:11px;display:flex;align-items:center;gap:5px">
+            <span style="width:5px;height:5px;background:var(--cyber-green);border-radius:50%;box-shadow:0 0 8px rgba(0,255,136,.4);display:inline-block"></span>
+            LIVE
+          </div>
+        </div>
+        <div class="hud-box">
+          <div class="hud-label">Zoom</div>
+          <div class="hud-value" style="font-size:11px" id="hud-zoom">6x</div>
+        </div>
+      </div>
+    </div>
 
+    <!-- Theme picker -->
     <div class="theme-picker">
       <button class="theme-btn active" data-theme="dark" title="Dark"></button>
       <button class="theme-btn" data-theme="satellite" title="Satellite"></button>
-      <button class="theme-btn" data-theme="light" title="Light"></button>
+      <button class="theme-btn" data-theme="midnight" title="Midnight"></button>
       <button class="theme-btn" data-theme="topo" title="Topo"></button>
     </div>
-
-    <div class="map-stats">
-      <div class="stat">
-        <span class="stat-label">Status</span>
-        <span class="stat-value live"><span class="live-dot"></span> Live</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Sources</span>
-        <span class="stat-value" id="source-count">—</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Articles Today</span>
-        <span class="stat-value" id="article-count">—</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Last Updated</span>
-        <span class="stat-value" id="last-updated">—</span>
-      </div>
-    </div>
-  </section>
+  </div>
 
   <!-- News Panel -->
   <aside class="news-panel">
     <div class="panel-header">
-      <div class="panel-title">Latest Headlines</div>
+      <div class="panel-title-row">
+        <div class="panel-title">// INTEL FEED</div>
+        <div class="panel-count"><span id="feed-count">0</span> articles</div>
+      </div>
       <div class="tabs">
-        <button class="tab active" data-tab="all">All</button>
-        <button class="tab" data-tab="politics">Politics</button>
-        <button class="tab" data-tab="economy">Economy</button>
-        <button class="tab" data-tab="tech">Tech</button>
-        <button class="tab" data-tab="sports">Sports</button>
+        <button class="tab active" data-tab="all">ALL</button>
+        <button class="tab" data-tab="politics">POL</button>
+        <button class="tab" data-tab="economy">ECON</button>
+        <button class="tab" data-tab="tech">TECH</button>
+        <button class="tab" data-tab="sports">SPORT</button>
       </div>
       <div class="search-wrap">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input class="search-input" type="text" placeholder="Search headlines..." id="search-input"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input class="search-input" type="text" placeholder="Filter feed..." id="panel-search"/>
       </div>
     </div>
 
     <div class="breaking-banner" id="breaking-banner" style="display:none">
-      <span class="breaking-badge"><span class="live-dot"></span> BREAKING</span>
+      <span class="breaking-badge">ALERT</span>
       <span class="breaking-text" id="breaking-text"></span>
     </div>
 
     <div class="news-feed" id="news-feed">
-      <!-- Skeleton loading -->
       <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w80"></div></div>
       <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w60"></div></div>
       <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w80"></div><div class="skeleton skeleton-bar w100"></div></div>
       <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w60"></div></div>
       <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w80"></div><div class="skeleton skeleton-bar w100"></div></div>
+      <div class="skeleton-item"><div class="skeleton skeleton-bar short"></div><div class="skeleton skeleton-bar w100"></div><div class="skeleton skeleton-bar w80"></div></div>
     </div>
   </aside>
 </div>
+</div>
 
 <script>
+// ══════════════════════════════
+// NEWS DATA
+// ══════════════════════════════
 const RSS_FEEDS = [
   { name: 'The Star', url: 'https://www.thestar.com.my/rss/News', category: 'politics' },
   { name: 'The Star', url: 'https://www.thestar.com.my/rss/Business', category: 'economy' },
@@ -551,11 +816,9 @@ const RSS_FEEDS = [
 ];
 
 const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
-
 let allArticles = [];
 let activeTab = 'all';
 
-// ── Fetch news ──
 async function fetchFeed(feed) {
   try {
     const res = await fetch(RSS2JSON + encodeURIComponent(feed.url));
@@ -569,22 +832,19 @@ async function fetchFeed(feed) {
       source: feed.name,
       category: feed.category,
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function decodeHTML(html) {
-  const txt = document.createElement('textarea');
-  txt.innerHTML = html;
-  return txt.value;
+  const t = document.createElement('textarea');
+  t.innerHTML = html;
+  return t.value;
 }
 
 async function loadNews() {
   const results = await Promise.all(RSS_FEEDS.map(fetchFeed));
   allArticles = results.flat().sort((a, b) => b.pubDate - a.pubDate);
 
-  // Deduplicate by similar titles
   const seen = new Set();
   allArticles = allArticles.filter(a => {
     const key = a.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
@@ -596,23 +856,23 @@ async function loadNews() {
   updateStats();
   renderNews();
   showBreaking();
+  buildTicker();
 }
 
-// ── Render ──
 function renderNews() {
   const feed = document.getElementById('news-feed');
-  const query = document.getElementById('search-input').value.toLowerCase();
+  const q1 = document.getElementById('search-input').value.toLowerCase();
+  const q2 = document.getElementById('panel-search').value.toLowerCase();
+  const query = q1 || q2;
 
   let items = allArticles;
   if (activeTab !== 'all') items = items.filter(a => a.category === activeTab);
   if (query) items = items.filter(a => a.title.toLowerCase().includes(query) || a.description.toLowerCase().includes(query));
 
+  document.getElementById('feed-count').textContent = items.length;
+
   if (items.length === 0) {
-    feed.innerHTML = `
-      <div class="empty-state">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V9a2 2 0 012-2h2a2 2 0 012 2v9a2 2 0 01-2 2h-2z"/></svg>
-        <p>No articles found</p>
-      </div>`;
+    feed.innerHTML = '<div class="empty-state">NO INTEL FOUND</div>';
     return;
   }
 
@@ -631,45 +891,58 @@ function renderNews() {
 }
 
 function showBreaking() {
-  if (allArticles.length === 0) return;
+  if (!allArticles.length) return;
   const latest = allArticles[0];
-  const age = Date.now() - latest.pubDate.getTime();
-  // Show as "breaking" if less than 2 hours old
-  if (age < 2 * 60 * 60 * 1000) {
+  if (Date.now() - latest.pubDate.getTime() < 2 * 60 * 60 * 1000) {
     document.getElementById('breaking-banner').style.display = 'flex';
     document.getElementById('breaking-text').textContent = latest.title;
   }
 }
 
+function buildTicker() {
+  const track = document.getElementById('ticker-track');
+  const items = allArticles.slice(0, 20);
+  const html = items.map(a =>
+    `<div class="ticker-item"><span class="src">${a.source}</span><span class="headline">${a.title}</span></div><span class="ticker-sep">◆</span>`
+  ).join('');
+  // Duplicate for seamless loop
+  track.innerHTML = html + html;
+}
+
 function updateStats() {
   const sources = new Set(allArticles.map(a => a.source));
-  document.getElementById('source-count').textContent = sources.size;
-  document.getElementById('article-count').textContent = allArticles.length;
-  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('stat-count').textContent = allArticles.length;
+  document.getElementById('stat-sources').textContent = sources.size;
+  document.getElementById('stat-time').textContent = new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
 }
 
 function timeAgo(date) {
   const s = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
-  return Math.floor(s / 86400) + 'd ago';
+  if (s < 60) return 'now';
+  if (s < 3600) return Math.floor(s / 60) + 'm';
+  if (s < 86400) return Math.floor(s / 3600) + 'h';
+  return Math.floor(s / 86400) + 'd';
 }
 
-// ── Tabs ──
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    activeTab = tab.dataset.tab;
-    renderNews();
+// ── Tabs (both nav and panel) ──
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.nav-tab[data-tab],.tab[data-tab]').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
   });
+  renderNews();
+}
+
+document.querySelectorAll('.nav-tab[data-tab],.tab[data-tab]').forEach(t => {
+  t.addEventListener('click', () => setTab(t.dataset.tab));
 });
 
-// ── Search ──
 document.getElementById('search-input').addEventListener('input', renderNews);
+document.getElementById('panel-search').addEventListener('input', renderNews);
 
-// ── Leaflet Map ──
+// ══════════════════════════════
+// LEAFLET MAP
+// ══════════════════════════════
 const map = L.map('map', {
   center: [4.5, 109],
   zoom: 6,
@@ -679,47 +952,51 @@ const map = L.map('map', {
   maxZoom: 10,
 });
 
+map.on('zoomend', () => {
+  document.getElementById('hud-zoom').textContent = map.getZoom() + 'x';
+});
+
 // ── Tile Themes ──
 const THEMES = {
   dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+    attr: '&copy; OSM &copy; CARTO',
     subdomains: 'abcd',
-    maskFill: '#0a0a0f',
-    stateFill: 'rgba(59,130,246,0.12)',
-    stateStroke: 'rgba(59,130,246,0.4)',
-    hoverFill: 'rgba(59,130,246,0.3)',
-    hoverStroke: '#3b82f6',
+    maskFill: '#08080c',
+    stateFill: 'rgba(255,106,0,0.06)',
+    stateStroke: 'rgba(255,106,0,0.3)',
+    hoverFill: 'rgba(255,106,0,0.15)',
+    hoverStroke: '#ff6a00',
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attr: '&copy; Esri',
     subdomains: null,
-    maskFill: '#0a0a0f',
-    stateFill: 'rgba(59,130,246,0.08)',
-    stateStroke: 'rgba(255,255,255,0.5)',
-    hoverFill: 'rgba(59,130,246,0.2)',
-    hoverStroke: '#60a5fa',
+    maskFill: '#08080c',
+    stateFill: 'rgba(255,106,0,0.05)',
+    stateStroke: 'rgba(255,165,0,0.5)',
+    hoverFill: 'rgba(255,106,0,0.15)',
+    hoverStroke: '#ff9d00',
   },
-  light: {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attr: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  midnight: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attr: '&copy; OSM &copy; CARTO',
     subdomains: 'abcd',
-    maskFill: '#0a0a0f',
-    stateFill: 'rgba(59,130,246,0.1)',
-    stateStroke: 'rgba(59,130,246,0.5)',
-    hoverFill: 'rgba(59,130,246,0.25)',
-    hoverStroke: '#2563eb',
+    maskFill: '#08080c',
+    stateFill: 'rgba(168,85,247,0.06)',
+    stateStroke: 'rgba(168,85,247,0.3)',
+    hoverFill: 'rgba(168,85,247,0.15)',
+    hoverStroke: '#a855f7',
   },
   topo: {
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attr: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+    attr: '&copy; OpenTopoMap',
     subdomains: 'abc',
-    maskFill: '#0a0a0f',
-    stateFill: 'rgba(59,130,246,0.08)',
-    stateStroke: 'rgba(59,130,246,0.5)',
-    hoverFill: 'rgba(59,130,246,0.25)',
-    hoverStroke: '#3b82f6',
+    maskFill: '#08080c',
+    stateFill: 'rgba(255,106,0,0.05)',
+    stateStroke: 'rgba(255,106,0,0.4)',
+    hoverFill: 'rgba(255,106,0,0.15)',
+    hoverStroke: '#ff6a00',
   },
 };
 
@@ -729,8 +1006,8 @@ let maskLayer = null;
 let geojsonLayer = null;
 let malaysiaGeoData = null;
 
-function applyTileLayer(themeKey) {
-  const t = THEMES[themeKey];
+function applyTileLayer(key) {
+  const t = THEMES[key];
   if (tileLayer) map.removeLayer(tileLayer);
   const opts = { attribution: t.attr, maxZoom: 19 };
   if (t.subdomains) opts.subdomains = t.subdomains;
@@ -739,35 +1016,19 @@ function applyTileLayer(themeKey) {
 
 applyTileLayer('dark');
 
-// ── Mask: darken everything outside Malaysia ──
+// ── Mask ──
 function buildMask(geojson, fillColor) {
-  // World polygon (huge rectangle)
-  const outer = [
-    [-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]
-  ];
-
-  // Extract all polygons from the GeoJSON as holes
+  const outer = [[-90,-180],[-90,180],[90,180],[90,-180],[-90,-180]];
   const holes = [];
-  const features = geojson.features || [];
-  features.forEach(f => {
-    const geom = f.geometry;
-    if (geom.type === 'Polygon') {
-      // Reverse winding for hole
-      holes.push(geom.coordinates[0].map(c => [c[1], c[0]]));
-    } else if (geom.type === 'MultiPolygon') {
-      geom.coordinates.forEach(poly => {
-        holes.push(poly[0].map(c => [c[1], c[0]]));
-      });
+  (geojson.features || []).forEach(f => {
+    const g = f.geometry;
+    if (g.type === 'Polygon') {
+      holes.push(g.coordinates[0].map(c => [c[1], c[0]]));
+    } else if (g.type === 'MultiPolygon') {
+      g.coordinates.forEach(poly => holes.push(poly[0].map(c => [c[1], c[0]])));
     }
   });
-
-  const latlngs = [outer, ...holes];
-  return L.polygon(latlngs, {
-    fillColor: fillColor,
-    fillOpacity: 1,
-    stroke: false,
-    interactive: false,
-  });
+  return L.polygon([outer, ...holes], { fillColor, fillOpacity: 1, stroke: false, interactive: false });
 }
 
 function applyMask() {
@@ -775,11 +1036,10 @@ function applyMask() {
   if (maskLayer) map.removeLayer(maskLayer);
   maskLayer = buildMask(malaysiaGeoData, THEMES[currentTheme].maskFill);
   maskLayer.addTo(map);
-  // Ensure mask is below the state borders
   if (geojsonLayer) geojsonLayer.bringToFront();
 }
 
-// ── GeoJSON state boundaries ──
+// ── GeoJSON ──
 const GEOJSON_URL = 'https://raw.githubusercontent.com/dosm-malaysia/data-open/main/datasets/geodata/administrative_1_state.geojson';
 const FALLBACK_URL = 'https://raw.githubusercontent.com/Skyjacker/my-states-geojson/master/malaysia.state.geojson';
 
@@ -793,25 +1053,24 @@ function getStyles() {
 
 function addGeoJSON(data) {
   malaysiaGeoData = data;
-  const styles = getStyles();
-
+  const s = getStyles();
   geojsonLayer = L.geoJSON(data, {
-    style: styles.default,
+    style: s.default,
     onEachFeature(feature, layer) {
       const name = feature.properties.name || feature.properties.Name || feature.properties.state || feature.properties.STATE || '';
       if (name) {
-        layer.bindTooltip(name, {
-          sticky: true,
-          className: 'state-tooltip',
-          direction: 'top',
-          offset: [0, -8],
-        });
+        layer.bindTooltip(name, { sticky: true, className: 'state-tooltip', direction: 'top', offset: [0, -8] });
       }
-      layer.on('mouseover', function () { this.setStyle(styles.hover); });
-      layer.on('mouseout', function () { geojsonLayer.resetStyle(this); });
+      layer.on('mouseover', function () {
+        this.setStyle(s.hover);
+        document.getElementById('hud-region').textContent = name.toUpperCase() || 'MALAYSIA';
+      });
+      layer.on('mouseout', function () {
+        geojsonLayer.resetStyle(this);
+        document.getElementById('hud-region').textContent = 'MALAYSIA';
+      });
     },
   }).addTo(map);
-
   applyMask();
 }
 
@@ -825,10 +1084,7 @@ fetch(GEOJSON_URL)
   .then(r => { if (!r.ok) throw new Error(); return r.json(); })
   .then(addGeoJSON)
   .catch(() => {
-    fetch(FALLBACK_URL)
-      .then(r => r.json())
-      .then(addGeoJSON)
-      .catch(() => {});
+    fetch(FALLBACK_URL).then(r => r.json()).then(addGeoJSON).catch(() => {});
   });
 
 // ── Theme Switcher ──
@@ -844,7 +1100,6 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 
 // ── Init ──
 loadNews();
-// Refresh every 5 minutes
 setInterval(loadNews, 5 * 60 * 1000);
 </script>
 

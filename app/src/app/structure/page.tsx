@@ -28,7 +28,12 @@ export default function StructurePage() {
     load()
   }, [])
 
-  // Drag end: save position
+  // Live drag: update position so edges follow
+  const handleDragMove = useCallback((id: string, x: number, y: number) => {
+    setNodes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n))
+  }, [])
+
+  // Drag end: persist to Supabase
   const handleDragEnd = useCallback(async (id: string, x: number, y: number) => {
     setNodes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n))
     await supabase.from('nodes').update({ x, y }).eq('id', id)
@@ -101,6 +106,7 @@ export default function StructurePage() {
             key={node.id}
             node={node}
             onDragEnd={handleDragEnd}
+            onDragMove={handleDragMove}
             onEdit={setEditingNode}
             onColorChange={handleColorChange}
             onAddChild={handleAddChild}

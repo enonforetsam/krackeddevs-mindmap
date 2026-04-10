@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, memo } from 'react'
 import type { MindMapNode as NodeType } from '@/lib/types'
 import { NODE_COLORS, textColorFor } from '@/lib/themes'
 
 interface MindMapNodeProps {
   node: NodeType
   onDragEnd: (id: string, x: number, y: number) => void
+  onDragMove: (id: string, x: number, y: number) => void
   onEdit: (node: NodeType) => void
   onColorChange: (id: string, color: string) => void
   onAddChild: (parentId: string) => void
@@ -16,9 +17,10 @@ interface MindMapNodeProps {
 
 const NODE_W = 220
 
-export default function MindMapNodeCard({
+function MindMapNodeCardInner({
   node,
   onDragEnd,
+  onDragMove,
   onEdit,
   onColorChange,
   onAddChild,
@@ -43,6 +45,8 @@ export default function MindMapNodeCard({
   const nodeDescColor = hasCustomColor ? (textColorFor(colorEntry.bg) === 'rgba(0,0,0,.85)' ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)') : 'var(--node-desc)'
   const dotColor = hasCustomColor ? 'rgba(255,255,255,.3)' : nodeBorder
 
+  const rafId = useRef(0)
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -50,7 +54,6 @@ export default function MindMapNodeCard({
     dragStart.current = { x: e.clientX, y: e.clientY }
     nodeStart.current = { x: posRef.current.x, y: posRef.current.y }
 
-    // Find the canvas wrapper to read current zoom
     const canvasEl = (e.target as HTMLElement).closest('[data-canvas-zoom]')
     const getZoom = () => canvasEl ? parseFloat(canvasEl.getAttribute('data-canvas-zoom') || '1') : 1
 
@@ -59,14 +62,18 @@ export default function MindMapNodeCard({
       const scale = getZoom()
       const newX = nodeStart.current.x + (ev.clientX - dragStart.current.x) / scale
       const newY = nodeStart.current.y + (ev.clientY - dragStart.current.y) / scale
-      const newPos = { x: newX, y: newY }
-      posRef.current = newPos
-      setPos(newPos)
+      posRef.current = { x: newX, y: newY }
+      cancelAnimationFrame(rafId.current)
+      rafId.current = requestAnimationFrame(() => {
+        setPos({ ...posRef.current })
+        onDragMove(node.id, posRef.current.x, posRef.current.y)
+      })
     }
 
     const onUp = () => {
       if (dragging.current) {
         dragging.current = false
+        cancelAnimationFrame(rafId.current)
         onDragEnd(node.id, posRef.current.x, posRef.current.y)
       }
       document.removeEventListener('mousemove', onMove)
@@ -75,7 +82,7 @@ export default function MindMapNodeCard({
 
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
-  }, [node.id, onDragEnd])
+  }, [node.id, onDragEnd, onDragMove])
 
   // Sync pos when node prop changes from external source
   if (!dragging.current && (pos.x !== node.x || pos.y !== node.y)) {
@@ -319,3 +326,6 @@ export default function MindMapNodeCard({
     </div>
   )
 }
+
+const MindMapNodeCard = memo(MindMapNodeCardInner)
+export default MindMapNodeCard
