@@ -83,9 +83,27 @@ body{background:var(--bg);font-family:var(--font);overflow:hidden;-webkit-font-s
   width:7px;height:7px;border-radius:50%;flex-shrink:0;
   display:inline-block;
 }
-.node .n-desc{font-size:11.5px;line-height:1.5;margin-bottom:5px;color:var(--node-desc)}
+
+/* Color popover */
+.node-color-popover{
+  position:absolute;bottom:-48px;left:50%;transform:translateX(-50%);
+  display:none;gap:5px;
+  background:var(--panel-bg);border:1px solid var(--panel-border);
+  border-radius:8px;padding:8px 10px;
+  backdrop-filter:blur(16px);box-shadow:0 4px 20px rgba(0,0,0,.3);
+  z-index:20;
+}
+.node-color-popover.open{display:flex}
+.nc-dot{
+  width:16px;height:16px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;
+  transition:transform .12s,border-color .12s;
+}
+.nc-dot:hover{transform:scale(1.15)}
+.nc-dot.active{border-color:var(--btn-hover-c)}
+.node .n-desc{font-size:11.5px;line-height:1.5;margin-bottom:5px;color:var(--node-desc);transition:color .2s}
 .node .n-link{
-  font-size:10px;color:var(--accent);text-decoration:none;cursor:pointer;
+  font-size:10px;color:inherit;text-decoration:none;cursor:pointer;opacity:.5;
   display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-family:var(--mono);opacity:.6;
   border-top:1px solid var(--node-link-border);
@@ -94,20 +112,40 @@ body{background:var(--bg);font-family:var(--font);overflow:hidden;-webkit-font-s
 .node .n-link:hover{opacity:1}
 .n-status{display:none}
 
-/* Node actions */
-.node-actions{position:absolute;top:-8px;right:-8px;display:none;gap:3px;flex-direction:row}
-.node:hover .node-actions{display:flex}
-.na-btn{
-  width:20px;height:20px;border-radius:6px;border:1px solid var(--panel-border);
-  cursor:pointer;font-size:10px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--panel-bg);color:var(--cancel-c);
-  backdrop-filter:blur(8px);transition:all .15s;
+/* Node actions — toggle menu inside the box */
+.na-toggle{
+  position:absolute;top:6px;right:6px;
+  width:24px;height:24px;border-radius:6px;border:none;
+  cursor:pointer;font-size:14px;line-height:1;
+  display:none;align-items:center;justify-content:center;
+  background:transparent;color:inherit;opacity:.35;
+  transition:opacity .12s;
 }
-.na-btn:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
+.node:hover .na-toggle{display:flex}
+.na-toggle:hover{opacity:.7}
+.node-actions{
+  display:none;flex-wrap:wrap;gap:4px;
+  margin-top:8px;padding-top:8px;
+  border-top:1px solid var(--node-link-border);
+}
+.node-actions.open{display:flex}
+.na-btn{
+  height:28px;border-radius:6px;border:1px solid var(--panel-border);
+  cursor:pointer;font-size:11px;line-height:1;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  background:var(--input-bg);color:var(--cancel-c);
+  padding:0 10px;transition:all .12s;
+  font-family:var(--font);font-weight:500;
+}
+.na-btn:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border);background:var(--btn-hover-bg)}
 .na-del:hover{color:#f43f5e;border-color:rgba(244,63,94,.3)}
-.na-add:hover{color:var(--accent);border-color:rgba(108,138,255,.3)}
-.na-expand,.na-edit{color:var(--cancel-c)}
+.na-color{position:relative}
+.na-color-dot{
+  width:10px;height:10px;border-radius:50%;
+  border:1.5px solid var(--cancel-border);
+  transition:border-color .12s;
+}
+.na-color:hover .na-color-dot{border-color:var(--btn-hover-border)}
 
 /* ── Toolbar ── */
 .toolbar{
@@ -248,189 +286,178 @@ body{background:var(--bg);font-family:var(--font);overflow:hidden;-webkit-font-s
 .s-pick.active-doing{border-color:rgba(245,166,35,.35);color:#f5a623}
 .s-pick.active-done{border-color:rgba(34,197,94,.35);color:#22c55e}
 
-/* ── Expand Panel ── */
-#expand-panel{
-  position:absolute;top:0;right:0;bottom:0;width:400px;z-index:150;
-  background:var(--panel-bg);
-  border-left:1px solid var(--panel-border);
-  backdrop-filter:blur(20px);
-  box-shadow:-4px 0 24px rgba(0,0,0,.2);
-  transform:translateX(100%);
-  transition:transform .28s cubic-bezier(.4,0,.2,1),background .35s,border-color .35s;
-  display:flex;flex-direction:column;
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  overflow:hidden;
+/* ── Node Mini Canvas (popout modal) ── */
+#node-canvas-overlay{
+  position:fixed;inset:0;z-index:180;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+  font-family:var(--font);
 }
-#expand-panel.open{transform:translateX(0)}
+#node-canvas-overlay.open{display:flex}
 
-/* Header */
-.ep-header{
-  position:relative;
-  padding:24px 24px 20px 28px;
+.nc-popout{
+  width:85vw;height:80vh;max-width:1100px;max-height:750px;
+  background:var(--panel-bg);
+  border:1px solid var(--panel-border);
+  border-radius:12px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  box-shadow:0 16px 60px rgba(0,0,0,.5);
+  backdrop-filter:blur(20px);
+}
+
+.nc-header{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--picker-divider);
   flex-shrink:0;
 }
-.ep-accent{
-  position:absolute;left:0;top:24px;bottom:20px;
-  width:3px;border-radius:0 2px 2px 0;
+.nc-back{
+  background:none;border:1px solid var(--cancel-border);color:var(--cancel-c);
+  padding:5px 12px;border-radius:6px;cursor:pointer;
+  font-size:11px;font-family:var(--font);font-weight:500;
+  display:flex;align-items:center;gap:5px;transition:all .15s;
+  flex-shrink:0;
 }
-.ep-header-top{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:14px;
+.nc-back:hover{color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
+.nc-back::before{content:'←';font-size:12px}
+.nc-header-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.nc-header-info{
+  display:flex;flex-direction:column;gap:2px;
+  flex:1;min-width:0;
 }
-.ep-type{
-  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--hud-c);font-family:'Courier New',monospace;font-weight:600;
+.nc-header-title{
+  font-size:15px;font-weight:600;color:var(--modal-text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.ep-close{
-  background:none;border:none;color:var(--cancel-c);
-  width:24px;height:24px;border-radius:4px;cursor:pointer;
+.nc-header-desc{
+  font-size:11px;color:var(--hud-c);line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.nc-toolbar{
+  display:flex;gap:3px;
+  background:var(--input-bg);border:1px solid var(--panel-border);
+  border-radius:6px;padding:3px 5px;
+}
+.nc-toolbar .tb-btn{font-size:10px;padding:4px 10px}
+
+.nc-canvas-area{
+  flex:1;position:relative;overflow:hidden;cursor:grab;
+  background:var(--bg);
+  background-image:radial-gradient(circle,var(--grid-c) 1px,transparent 1px);
+  background-size:24px 24px;
+  border-radius:0 0 12px 12px;
+}
+.nc-canvas-area.panning{cursor:grabbing}
+#nc-canvas{
+  position:absolute;top:0;left:0;width:1px;height:1px;
+  transform-origin:0 0;will-change:transform;
+}
+
+/* Mini canvas items */
+.mc-text{
+  position:absolute;
+  min-width:120px;max-width:300px;
+  background:var(--panel-bg);border:1.5px solid var(--panel-border);
+  border-radius:8px;padding:10px 12px;
+  font-size:13px;line-height:1.5;color:var(--modal-text);
+  cursor:grab;user-select:none;
+  transition:box-shadow .15s,border-color .15s;
+}
+.mc-text:hover{border-color:var(--btn-hover-border);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.mc-text:hover .mc-actions{opacity:1}
+.mc-text.dragging{opacity:.6;cursor:grabbing;z-index:20}
+.mc-text .mc-content{
+  outline:none;white-space:pre-wrap;word-wrap:break-word;
+  min-height:20px;cursor:text;
+}
+.mc-text .mc-content:empty::before{content:'Type here...';color:var(--hud-c)}
+
+.mc-shape{
+  position:absolute;cursor:grab;user-select:none;
+  transition:box-shadow .15s;
+}
+.mc-shape:hover{box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.mc-shape:hover .mc-actions{opacity:1}
+.mc-shape.dragging{opacity:.6;cursor:grabbing;z-index:20}
+.mc-shape-rect{
+  width:120px;height:80px;border:1.5px solid var(--panel-border);
+  border-radius:8px;background:var(--input-bg);
+}
+.mc-shape-circle{
+  width:80px;height:80px;border:1.5px solid var(--panel-border);
+  border-radius:50%;background:var(--input-bg);
+}
+
+.mc-subbox{
+  position:absolute;
+  width:180px;
+  background:var(--panel-bg);border:1.5px solid var(--panel-border);
+  border-radius:10px;padding:12px 14px;
+  cursor:grab;user-select:none;
+  transition:box-shadow .15s,border-color .15s;
+}
+.mc-subbox:hover{border-color:var(--btn-hover-border);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.mc-subbox:hover .mc-actions{opacity:1}
+.mc-subbox.dragging{opacity:.6;cursor:grabbing;z-index:20}
+.mc-subbox-title{
+  font-size:13px;font-weight:600;color:var(--modal-text);
+  margin-bottom:4px;outline:none;
+}
+.mc-subbox-title:empty::before{content:'Title...';color:var(--hud-c)}
+.mc-subbox-body{
+  font-size:11.5px;line-height:1.5;color:var(--node-desc);
+  outline:none;
+}
+.mc-subbox-body:empty::before{content:'Details...';color:var(--hud-c)}
+
+.mc-sticky{
+  position:absolute;
+  width:180px;min-height:120px;
+  padding:12px 12px 28px;border-radius:8px;
+  font-size:13px;line-height:1.5;
+  cursor:grab;user-select:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+  transition:box-shadow .15s;
+}
+.mc-sticky:hover{box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.mc-sticky:hover .mc-actions{opacity:1}
+.mc-sticky:hover .mc-sticky-colors{opacity:1}
+.mc-sticky.dragging{opacity:.6;cursor:grabbing;z-index:20}
+.mc-sticky .mc-content{
+  outline:none;white-space:pre-wrap;word-wrap:break-word;
+  min-height:60px;cursor:text;
+}
+.mc-sticky-colors{
+  position:absolute;bottom:6px;left:10px;
+  display:flex;gap:4px;opacity:0;transition:opacity .15s;
+}
+
+.mc-actions{
+  position:absolute;top:-10px;right:-6px;
+  display:flex;gap:2px;opacity:0;transition:opacity .15s;
+  background:var(--panel-bg);border:1px solid var(--panel-border);
+  border-radius:6px;padding:2px 3px;
+  backdrop-filter:blur(12px);box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.mc-act{
+  width:22px;height:22px;border-radius:5px;border:none;
+  cursor:pointer;font-size:11px;line-height:1;
   display:flex;align-items:center;justify-content:center;
-  font-size:18px;line-height:1;transition:all .15s;
+  background:transparent;color:var(--cancel-c);transition:all .12s;
 }
-.ep-close:hover{color:var(--btn-hover-c);background:var(--btn-hover-bg)}
-.ep-title{
-  font-size:20px;font-weight:600;line-height:1.25;
-  color:var(--modal-text);
-  letter-spacing:-.01em;
-  word-break:break-word;
-}
+.mc-act:hover{color:var(--btn-hover-c);background:var(--btn-hover-bg)}
+.mc-act.del:hover{color:#f43f5e;background:rgba(244,63,94,.08)}
 
-/* Body */
-.ep-body{
-  flex:1;overflow-y:auto;
-  padding:8px 28px 24px 28px;
+.nc-hud{
+  position:absolute;bottom:14px;right:14px;
+  font-size:11px;color:var(--hud-c);font-family:var(--mono);
+  background:var(--panel-bg);border:1px solid var(--panel-border);
+  padding:6px 12px;border-radius:8px;backdrop-filter:blur(16px);
 }
-.ep-body::-webkit-scrollbar{width:6px}
-.ep-body::-webkit-scrollbar-track{background:transparent}
-.ep-body::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:3px}
-.ep-body::-webkit-scrollbar-thumb:hover{background:var(--btn-hover-border)}
-
-.ep-section{padding:16px 0;border-top:1px solid var(--picker-divider)}
-.ep-section:first-child{border-top:none;padding-top:8px}
-
-.ep-label{
-  font-size:11px;font-weight:600;letter-spacing:.04em;
-  color:var(--hud-c);margin-bottom:10px;
-  display:flex;align-items:center;gap:8px;
-}
-.ep-label-count{
-  font-size:10px;font-weight:500;
-  color:var(--cancel-c);
-  background:var(--input-bg);
-  padding:1px 7px;border-radius:10px;
-  border:1px solid var(--input-border);
-}
-
-/* Description */
-.ep-desc{
-  font-size:13px;line-height:1.6;
-  color:var(--modal-text);
-}
-
-/* Link */
-.ep-link{
-  font-size:12px;color:var(--accent);text-decoration:none;
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 10px;border-radius:5px;
-  background:var(--input-bg);
-  border:1px solid var(--input-border);
-  transition:all .15s;word-break:break-all;
-}
-.ep-link::before{content:'↗';font-size:11px;opacity:.7}
-.ep-link:hover{background:var(--btn-hover-bg);border-color:var(--btn-hover-border)}
-
-/* Notes */
-.ep-notes-list{display:flex;flex-direction:column;gap:8px}
-.ep-note{
-  position:relative;
-  padding:11px 13px 10px;border-radius:6px;
-  background:var(--input-bg);
-  border:1px solid var(--input-border);
-  transition:all .15s;
-}
-.ep-note:hover{border-color:var(--btn-border)}
-.ep-note:hover .ep-note-del{opacity:.6}
-.ep-note-text{
-  font-size:13px;color:var(--modal-text);
-  line-height:1.55;word-break:break-word;
-  margin-bottom:6px;
-  white-space:pre-wrap;
-}
-.ep-note-meta{
-  display:flex;align-items:center;gap:8px;
-  font-size:10px;color:var(--hud-c);
-  font-family:'Courier New',monospace;letter-spacing:.02em;
-}
-.ep-note-meta::before{
-  content:'';width:3px;height:3px;border-radius:50%;
-  background:var(--hud-c);opacity:.5;
-}
-.ep-note-del{
-  position:absolute;top:8px;right:8px;
-  background:none;border:none;color:var(--cancel-c);cursor:pointer;
-  font-size:14px;padding:2px 6px;line-height:1;border-radius:3px;
-  opacity:0;transition:all .15s;
-}
-.ep-note-del:hover{opacity:1!important;background:rgba(255,68,85,.1);color:#ff4455}
-
-.ep-empty{
-  font-size:12px;color:var(--hud-c);
-  padding:14px;text-align:center;
-  border:1px dashed var(--input-border);border-radius:6px;
-}
-
-.ep-add-row{display:flex;gap:6px;margin-top:10px}
-.ep-add-input{
-  flex:1;background:var(--input-bg);border:1px solid var(--input-border);
-  border-radius:5px;color:var(--input-c);padding:8px 11px;
-  font-size:13px;font-family:inherit;outline:none;
-  transition:border-color .15s,background .15s;
-}
-.ep-add-input:focus{border-color:var(--input-focus-border);background:var(--input-focus-bg)}
-.ep-add-input::placeholder{color:var(--hud-c)}
-.ep-add-btn{
-  background:var(--btn-hover-bg);color:var(--accent);
-  border:1px solid var(--btn-hover-border);border-radius:5px;
-  padding:0 14px;cursor:pointer;font-size:12px;font-weight:500;
-  font-family:inherit;transition:all .15s;flex-shrink:0;
-}
-.ep-add-btn:hover{opacity:.85}
-
-/* Connections */
-.ep-conn{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 10px;border-radius:5px;cursor:pointer;
-  font-size:13px;color:var(--modal-text);
-  transition:background .15s;
-  margin:0 -10px;
-}
-.ep-conn:hover{background:var(--btn-hover-bg)}
-.ep-conn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
-.ep-conn-arrow{font-size:11px;color:var(--hud-c);font-family:'Courier New',monospace}
-.ep-conn-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ep-conn-label{
-  font-size:10px;color:var(--hud-c);
-  font-family:'Courier New',monospace;letter-spacing:.04em;text-transform:uppercase;
-  background:var(--input-bg);padding:2px 7px;border-radius:10px;
-  border:1px solid var(--input-border);
-}
-
-/* Footer */
-.ep-footer{
-  padding:14px 24px;border-top:1px solid var(--picker-divider);
-  display:flex;gap:8px;flex-shrink:0;
-  background:var(--panel-bg);
-}
-.ep-fbtn{
-  flex:1;background:transparent;border:1px solid var(--btn-border);
-  color:var(--btn-c);padding:9px 0;border-radius:5px;cursor:pointer;
-  font-size:12px;font-family:inherit;font-weight:500;
-  transition:all .15s;text-align:center;
-}
-.ep-fbtn:hover{background:var(--btn-hover-bg);color:var(--btn-hover-c);border-color:var(--btn-hover-border)}
-
-/* Expand button in node actions */
-.na-expand{background:#0e0e1a;color:#6a7a8a;border:1px solid rgba(255,255,255,.1)}
+.nc-hud .hud-val{color:var(--hud-val)}
 
 /* ── View Tabs ── */
 #view-tabs{
@@ -1147,20 +1174,28 @@ body{background:var(--bg);font-family:var(--font);overflow:hidden;-webkit-font-s
     </div>
   </div>
 
-  <!-- Expand panel -->
-  <div id="expand-panel">
-    <div class="ep-header">
-      <div class="ep-accent" id="ep-accent"></div>
-      <div class="ep-header-top">
-        <div class="ep-type" id="ep-type"></div>
-        <button class="ep-close" onclick="closeExpand()" title="Close (Esc)">×</button>
+  <!-- Node mini canvas popout -->
+  <div id="node-canvas-overlay" onclick="if(event.target===this)closeNodeCanvas()">
+    <div class="nc-popout">
+      <div class="nc-header">
+        <button class="nc-back" onclick="closeNodeCanvas()">Close</button>
+        <div class="nc-header-dot" id="nc-dot"></div>
+        <div class="nc-header-info">
+          <div class="nc-header-title" id="nc-title"></div>
+          <div class="nc-header-desc" id="nc-desc"></div>
+        </div>
+        <div class="nc-toolbar">
+          <button class="tb-btn" onclick="addMcText()">Text</button>
+          <button class="tb-btn" onclick="addMcSticky()">Sticky</button>
+          <button class="tb-btn" onclick="addMcShape('rect')">▭</button>
+          <button class="tb-btn" onclick="addMcShape('circle')">○</button>
+          <button class="tb-btn" onclick="addMcSubbox()">Box</button>
+        </div>
       </div>
-      <div class="ep-title" id="ep-title"></div>
-    </div>
-    <div class="ep-body" id="ep-body"></div>
-    <div class="ep-footer">
-      <button class="ep-fbtn" onclick="editFromExpand()">Edit</button>
-      <button class="ep-fbtn" onclick="addFromExpand()">+ Add child</button>
+      <div class="nc-canvas-area" id="nc-canvas-area">
+        <div id="nc-canvas"></div>
+        <div class="nc-hud"><span id="nc-zoom" class="hud-val">100%</span> zoom</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1354,6 +1389,83 @@ function colorOf(t){
   return p[t]||p.default;
 }
 
+/* Node custom color palette — solid backgrounds with auto B/W text */
+const NODE_COLORS = [
+  {key:'blue',   bg:'#3b82f6', border:'#2563eb', dot:'#3b82f6'},
+  {key:'green',  bg:'#22c55e', border:'#16a34a', dot:'#22c55e'},
+  {key:'amber',  bg:'#f59e0b', border:'#d97706', dot:'#f59e0b'},
+  {key:'red',    bg:'#ef4444', border:'#dc2626', dot:'#ef4444'},
+  {key:'purple', bg:'#8b5cf6', border:'#7c3aed', dot:'#8b5cf6'},
+  {key:'pink',   bg:'#ec4899', border:'#db2777', dot:'#ec4899'},
+  {key:'teal',   bg:'#14b8a6', border:'#0d9488', dot:'#14b8a6'},
+  {key:'grey',   bg:'#6b7280', border:'#4b5563', dot:'#6b7280'},
+  {key:'white',  bg:'#f3f4f6', border:'#d1d5db', dot:'#f3f4f6'},
+  {key:'dark',   bg:'#1f2937', border:'#111827', dot:'#1f2937'},
+];
+
+/* Returns black or white depending on bg luminance */
+function textColorFor(hex){
+  const c=hex.replace('#','');
+  const r=parseInt(c.substr(0,2),16);
+  const g=parseInt(c.substr(2,2),16);
+  const b=parseInt(c.substr(4,2),16);
+  const lum=(0.299*r+0.587*g+0.114*b)/255;
+  return lum>0.55?'rgba(0,0,0,.85)':'rgba(255,255,255,.95)';
+}
+
+function descColorFor(hex){
+  const c=hex.replace('#','');
+  const r=parseInt(c.substr(0,2),16);
+  const g=parseInt(c.substr(2,2),16);
+  const b=parseInt(c.substr(4,2),16);
+  const lum=(0.299*r+0.587*g+0.114*b)/255;
+  return lum>0.55?'rgba(0,0,0,.5)':'rgba(255,255,255,.5)';
+}
+
+function nodeColorFor(n){
+  if(n.color){
+    const c=NODE_COLORS.find(c=>c.key===n.color);
+    if(c)return {bg:c.bg, border:c.border, title:textColorFor(c.bg), desc:descColorFor(c.bg)};
+  }
+  return colorOf(n.type);
+}
+
+function applyNodeStyle(el,n){
+  const c=nodeColorFor(n);
+  el.style.background=c.bg;
+  el.style.color=c.title;
+  const dot=el.querySelector('.n-dot');
+  if(dot)dot.style.background=n.color?'rgba(255,255,255,.3)':c.border;
+  const desc=el.querySelector('.n-desc');
+  if(desc)desc.style.color=c.desc||'';
+  el.querySelectorAll('.nc-dot').forEach(d=>d.classList.toggle('active',d.dataset.nc===n.color));
+  // Update color dot in action bar
+  const cDot=el.querySelector('.na-color-dot');
+  if(cDot)cDot.style.background=c.border;
+  // Close popover after picking
+  const pop=el.querySelector('.node-color-popover');
+  if(pop)pop.classList.remove('open');
+}
+
+function setNodeColor(id,colorKey,e){
+  if(e)e.stopPropagation();
+  const n=nodes.find(n=>n.id===id);
+  if(!n)return;
+  n.color=colorKey;
+  const el=nodeEls[id]; if(!el)return;
+  applyNodeStyle(el,n);
+  drawEdges();
+}
+
+function clearNodeColor(id,e){
+  if(e)e.stopPropagation();
+  const n=nodes.find(n=>n.id===id);
+  if(!n)return;
+  delete n.color;
+  const el=nodeEls[id]; if(!el)return;
+  applyNodeStyle(el,n);
+}
+
 /* ── Build theme picker UI ── */
 function buildThemePicker(){
   const colDark  = document.getElementById('col-dark');
@@ -1429,28 +1541,33 @@ function updateProgress(){
 }
 
 function createNodeEl(n){
-  const c=colorOf(n.type);
+  const c=nodeColorFor(n);
   const div=document.createElement('div');
   div.className='node '+statusClass(n.status);
   div.id='node-'+n.id;
-  div.style.cssText=`background:${c.bg};color:${c.title};left:0;top:0;`;
+  div.style.cssText=`left:0;top:0;`;
+  const colorDots=NODE_COLORS.map(nc=>`<span class="nc-dot${n.color===nc.key?' active':''}" data-nc="${nc.key}" style="background:${nc.dot}" onclick="setNodeColor('${n.id}','${nc.key}',event)"></span>`).join('');
   div.innerHTML=`
-    <div class="node-actions">
-      <button class="na-btn na-expand" title="Expand" onclick="openExpand('${n.id}',event)">⤢</button>
-      <button class="na-btn na-edit" title="Edit" onclick="openEdit('${n.id}',event)">✎</button>
-      <button class="na-btn na-add" title="Add child" onclick="addNode('${n.id}',event)">+</button>
-      <button class="na-btn na-del" title="Delete" onclick="deleteNode('${n.id}',event)">×</button>
-    </div>
+    <button class="na-toggle" onclick="toggleNodeMenu('${n.id}',event)">⋯</button>
     <div class="n-status ${statusClass(n.status)}" onclick="cycleStatus('${n.id}',event)">${statusDot(n.status)}</div>
     <div class="n-title" id="nt-${n.id}"><span class="n-dot" style="background:${c.border}"></span>${n.title}</div>
     <div class="n-desc" id="nd-${n.id}">${n.desc}</div>
     <a class="n-link" id="nl-${n.id}" href="${n.link}" target="_blank" style="${n.link?'':'display:none'}">${n.link}</a>
+    <div class="node-actions" id="na-${n.id}">
+      <button class="na-btn" onclick="openNodeCanvas('${n.id}',event)">⤢ Open</button>
+      <button class="na-btn" onclick="openEdit('${n.id}',event)">✎ Edit</button>
+      <button class="na-btn na-color" onclick="toggleColorPopover('${n.id}',event)"><span class="na-color-dot" style="background:${c.border}"></span> Color</button>
+      <button class="na-btn" onclick="addNode('${n.id}',event)">+ Child</button>
+      <button class="na-btn na-del" onclick="deleteNode('${n.id}',event)">× Delete</button>
+    </div>
+    <div class="node-color-popover" id="ncp-${n.id}">${colorDots}</div>
   `;
   div.addEventListener('mousedown',e=>startDrag(e,n.id));
   div.addEventListener('click',e=>nodeClick(e,n.id));
-  div.addEventListener('dblclick',e=>{e.stopPropagation();openExpand(n.id,e);});
+  div.addEventListener('dblclick',e=>{e.stopPropagation();openNodeCanvas(n.id,e);});
   wrap.appendChild(div);
   nodeEls[n.id]=div;
+  applyNodeStyle(div,n);
   positionNode(n);
 }
 
@@ -1473,7 +1590,7 @@ function drawEdges(){
     const bx=(nb.x+wb/2)*zoom+pan.x, by=(nb.y+hb/2)*zoom+pan.y;
     const isSupport=etype==='supports';
     const bothDone=na.status==='done'&&nb.status==='done';
-    const col=isSupport?'#d4a017':bothDone?'#00e5a0':colorOf(na.type==='root'?nb.type:na.type).border;
+    const col=isSupport?'#d4a017':bothDone?'#00e5a0':nodeColorFor(na.type==='root'?nb:na).border;
     const opacity=isSupport?'0.55':bothDone?'0.7':'0.4';
     const line=document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1',ax);line.setAttribute('y1',ay);
@@ -1602,13 +1719,11 @@ function saveEdit(id){
   const activeBtn=document.getElementById('status-row').querySelector('.s-pick[class*="active-"]');
   if(activeBtn)n.status=activeBtn.dataset.s;
   removeModal();
-  const c=colorOf(n.type); const el=nodeEls[id];
-  el.style.background=c.bg; el.style.color=c.title;
+  const c=nodeColorFor(n); const el=nodeEls[id];
   el.className='node '+statusClass(n.status);
   const titleEl=document.getElementById('nt-'+id);
   titleEl.innerHTML=`<span class="n-dot" style="background:${c.border}"></span>${escHtml(n.title)}`;
-  const dotEl=el.querySelector('.n-dot');
-  if(dotEl)dotEl.style.background=c.border;
+  applyNodeStyle(el,n);
   document.getElementById('nd-'+id).textContent=n.desc;
   const badge=el.querySelector('.n-status');
   badge.className='n-status '+statusClass(n.status);
@@ -1632,12 +1747,13 @@ function setTheme(key){
   Object.entries(t.vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
   // Update theme swatch button dot
   document.getElementById('theme-swatch').style.background=t.accent;
-  // Re-color all nodes
+  // Re-color all nodes (custom color overrides survive theme changes)
   nodes.forEach(n=>{
-    const c=colorOf(n.type); const el=nodeEls[n.id]; if(!el)return;
-    el.style.background=c.bg; el.style.color=c.title;
-    const dot=el.querySelector('.n-dot');
-    if(dot)dot.style.background=c.border;
+    const el=nodeEls[n.id]; if(!el)return;
+    const c=nodeColorFor(n);
+    const titleEl=el.querySelector('.n-title');
+    if(titleEl)titleEl.innerHTML=`<span class="n-dot" style="background:${c.border}"></span>${escHtml(n.title)}`;
+    applyNodeStyle(el,n);
   });
   // Update active state in picker
   document.querySelectorAll('.t-opt').forEach(o=>o.classList.toggle('active',o.dataset.t===key));
@@ -1692,116 +1808,258 @@ function importJSON(){
   input.click();
 }
 
-/* ── Expand Panel ── */
-let expandNodeId = null;
-
-function openExpand(id,e){
-  if(e)e.stopPropagation();
-  expandNodeId=id;
-  const n=nodes.find(n=>n.id===id);
-  if(!n.notes)n.notes=[];
-  const c=colorOf(n.type);
-  const panel=document.getElementById('expand-panel');
-  document.getElementById('ep-title').textContent=n.title;
-  document.getElementById('ep-type').textContent=n.type;
-  document.getElementById('ep-accent').style.background=c.border;
-  renderExpandBody(n);
-  panel.classList.add('open');
-}
-
-function closeExpand(){
-  document.getElementById('expand-panel').classList.remove('open');
-  expandNodeId=null;
-}
-
-function renderExpandBody(n){
-  const conns=edges.filter(([a,b])=>a===n.id||b===n.id).map(([a,b,t])=>{
-    const otherId=a===n.id?b:a;
-    const other=nodes.find(nn=>nn.id===otherId);
-    if(!other)return'';
-    const oc=colorOf(other.type);
-    const arrow=a===n.id?'→':'←';
-    const label=t==='supports'?'supports':(a===n.id?'child':'parent');
-    return `<div class="ep-conn" onclick="openExpand('${other.id}')">
-      <span class="ep-conn-dot" style="background:${oc.border};color:${oc.border}"></span>
-      <span class="ep-conn-arrow">${arrow}</span>
-      <span class="ep-conn-name">${escHtml(other.title)}</span>
-      <span class="ep-conn-label">${label}</span>
-    </div>`;
-  }).join('');
-
-  const notesList=n.notes&&n.notes.length?n.notes.map((note,i)=>`
-    <div class="ep-note">
-      <div class="ep-note-text">${escHtml(note.text)}</div>
-      <div class="ep-note-meta">${escHtml(note.time||'')}</div>
-      <button class="ep-note-del" onclick="deleteNote('${n.id}',${i})" title="Delete">×</button>
-    </div>
-  `).join(''):'<div class="ep-empty">No notes yet</div>';
-
-  const noteCount=n.notes?n.notes.length:0;
-  const connCount=edges.filter(([a,b])=>a===n.id||b===n.id).length;
-
-  document.getElementById('ep-body').innerHTML=`
-    ${n.desc?`<div class="ep-section">
-      <div class="ep-label">Description</div>
-      <div class="ep-desc">${escHtml(n.desc)}</div>
-    </div>`:''}
-    ${n.link?`<div class="ep-section">
-      <div class="ep-label">Link</div>
-      <a class="ep-link" href="${escHtml(n.link)}" target="_blank">${escHtml(n.link)}</a>
-    </div>`:''}
-    <div class="ep-section">
-      <div class="ep-label">Notes${noteCount?` <span class="ep-label-count">${noteCount}</span>`:''}</div>
-      <div class="ep-notes-list">${notesList}</div>
-      <div class="ep-add-row">
-        <input class="ep-add-input" id="ep-note-input" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote('${n.id}')">
-        <button class="ep-add-btn" onclick="addNote('${n.id}')">Add</button>
-      </div>
-    </div>
-    ${conns?`<div class="ep-section">
-      <div class="ep-label">Connections <span class="ep-label-count">${connCount}</span></div>
-      ${conns}
-    </div>`:''}
-  `;
-}
-
+/* ══════════════════════════════════════════════
+   NODE MINI CANVAS + COLOR POPOVER
+══════════════════════════════════════════════ */
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-function addNote(id){
-  const input=document.getElementById('ep-note-input');
-  const text=input.value.trim();
-  if(!text)return;
+const NC_KEY='kd-nodecanvas-v1';
+let ncOpenId=null;
+let ncPan={x:80,y:80}, ncZoom=1;
+let ncPanning=false, ncPanStart={x:0,y:0}, ncPanOrigin={x:0,y:0};
+let ncDragId=null, ncDragOff={x:0,y:0};
+let ncData={};  // {nodeId: [{id,type,x,y,text,title,body,shape,color},...]}
+
+const MC_STICKY_COLORS=['yellow','pink','blue','green','orange'];
+const MC_STICKY_BG={yellow:'#fef3a8',pink:'#ffc8d4',blue:'#b8e0ff',green:'#c4f0c4',orange:'#ffd7a8'};
+
+function loadNcData(){
+  const s=localStorage.getItem(NC_KEY);
+  if(s){try{ncData=JSON.parse(s);}catch(e){ncData={};}}
+}
+function saveNcData(){localStorage.setItem(NC_KEY,JSON.stringify(ncData));}
+function ensureNcData(nid){if(!ncData[nid])ncData[nid]=[];return ncData[nid];}
+
+/* Toggle node action menu */
+function toggleNodeMenu(id,e){
+  e.stopPropagation();
+  const menu=document.getElementById('na-'+id);
+  if(!menu)return;
+  const wasOpen=menu.classList.contains('open');
+  // Close all open menus + popovers
+  document.querySelectorAll('.node-actions.open').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.node-color-popover.open').forEach(p=>p.classList.remove('open'));
+  if(!wasOpen)menu.classList.add('open');
+}
+
+/* Color popover toggle */
+function toggleColorPopover(id,e){
+  e.stopPropagation();
+  const pop=document.getElementById('ncp-'+id);
+  if(!pop)return;
+  const wasOpen=pop.classList.contains('open');
+  document.querySelectorAll('.node-color-popover.open').forEach(p=>p.classList.remove('open'));
+  if(!wasOpen)pop.classList.add('open');
+}
+// Close menus + popovers on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.node-actions')&&!e.target.closest('.na-toggle')&&!e.target.closest('.node-color-popover')&&!e.target.closest('.na-color')){
+    document.querySelectorAll('.node-actions.open').forEach(m=>m.classList.remove('open'));
+    document.querySelectorAll('.node-color-popover.open').forEach(p=>p.classList.remove('open'));
+  }
+});
+
+/* Open node mini canvas */
+function openNodeCanvas(id,e){
+  if(e)e.stopPropagation();
+  ncOpenId=id;
   const n=nodes.find(n=>n.id===id);
-  if(!n.notes)n.notes=[];
-  const now=new Date();
-  const time=now.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  n.notes.push({text,time});
-  renderExpandBody(n);
-  setTimeout(()=>{const inp=document.getElementById('ep-note-input');if(inp)inp.focus();},50);
+  const c=nodeColorFor(n);
+  document.getElementById('nc-dot').style.background=c.border;
+  document.getElementById('nc-title').textContent=n.title;
+  document.getElementById('nc-desc').textContent=n.desc||'';
+  ncPan={x:80,y:80};ncZoom=1;
+  renderNodeCanvas();
+  document.getElementById('node-canvas-overlay').classList.add('open');
+}
+function closeNodeCanvas(){
+  document.getElementById('node-canvas-overlay').classList.remove('open');
+  ncOpenId=null;
 }
 
-function deleteNote(id,idx){
-  const n=nodes.find(n=>n.id===id);
-  n.notes.splice(idx,1);
-  renderExpandBody(n);
+function renderNodeCanvas(){
+  if(!ncOpenId)return;
+  const items=ensureNcData(ncOpenId);
+  const canvas=document.getElementById('nc-canvas');
+
+  canvas.innerHTML=items.map(it=>{
+    const del=`<div class="mc-actions"><button class="mc-act del" onclick="deleteMcItem('${it.id}',event)">×</button></div>`;
+    if(it.type==='text'){
+      return `<div class="mc-text" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px">
+        ${del}
+        <div class="mc-content" contenteditable="true" onblur="saveMcText('${it.id}',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.text||'')}</div>
+      </div>`;
+    }
+    if(it.type==='sticky'){
+      const col=it.color||'yellow';
+      const bg=MC_STICKY_BG[col]||MC_STICKY_BG.yellow;
+      const dots=MC_STICKY_COLORS.map(c=>`<span class="nc-dot" style="background:${MC_STICKY_BG[c]};width:12px;height:12px" onclick="setMcStickyColor('${it.id}','${c}',event)"></span>`).join('');
+      return `<div class="mc-sticky" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px;background:${bg};color:#2a2410">
+        ${del}
+        <div class="mc-content" contenteditable="true" onblur="saveMcText('${it.id}',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.text||'')}</div>
+        <div class="mc-sticky-colors">${dots}</div>
+      </div>`;
+    }
+    if(it.type==='shape'){
+      const cls=it.shape==='circle'?'mc-shape-circle':'mc-shape-rect';
+      return `<div class="mc-shape" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px">
+        ${del}<div class="${cls}"></div>
+      </div>`;
+    }
+    if(it.type==='subbox'){
+      return `<div class="mc-subbox" data-mid="${it.id}" style="left:${it.x}px;top:${it.y}px">
+        ${del}
+        <div class="mc-subbox-title" contenteditable="true" onblur="saveMcSubbox('${it.id}','title',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.title||'')}</div>
+        <div class="mc-subbox-body" contenteditable="true" onblur="saveMcSubbox('${it.id}','body',this.innerText)" onmousedown="event.stopPropagation()">${escHtml(it.body||'')}</div>
+      </div>`;
+    }
+    return '';
+  }).join('');
+
+  updateNcTransform();
+  attachMcHandlers();
 }
 
-function editFromExpand(){
-  if(!expandNodeId)return;
-  closeExpand();
-  openEdit(expandNodeId);
+function updateNcTransform(){
+  document.getElementById('nc-canvas').style.transform=`translate(${ncPan.x}px,${ncPan.y}px) scale(${ncZoom})`;
+  document.getElementById('nc-zoom').textContent=Math.round(ncZoom*100)+'%';
 }
 
-function addFromExpand(){
-  if(!expandNodeId)return;
-  const pid=expandNodeId;
-  closeExpand();
-  addNode(pid);
+/* Attach drag handlers to mini canvas items */
+function attachMcHandlers(){
+  document.querySelectorAll('#nc-canvas [data-mid]').forEach(el=>{
+    el.addEventListener('mousedown',e=>{
+      // Only skip drag if clicking inside a focused editable, or on action buttons / color dots
+      if(e.target.closest('.mc-actions,.mc-sticky-colors'))return;
+      const editable=e.target.closest('[contenteditable]');
+      if(editable&&document.activeElement===editable)return;
+      if(e.button!==0)return;
+      e.stopPropagation();
+      e.preventDefault(); // prevent focus when starting drag
+      ncDragId=el.dataset.mid;
+      const it=ensureNcData(ncOpenId).find(i=>i.id===ncDragId);
+      if(!it)return;
+      const pos=ncCoords(e.clientX,e.clientY);
+      ncDragOff={x:pos.x-it.x,y:pos.y-it.y};
+      el.classList.add('dragging');
+      document.addEventListener('mousemove',onMcDrag);
+      document.addEventListener('mouseup',stopMcDrag);
+    });
+  });
 }
 
-// Close expand panel on Escape
+function onMcDrag(e){
+  if(!ncDragId)return;
+  const it=ensureNcData(ncOpenId).find(i=>i.id===ncDragId);
+  if(!it)return;
+  const pos=ncCoords(e.clientX,e.clientY);
+  it.x=pos.x-ncDragOff.x;it.y=pos.y-ncDragOff.y;
+  const el=document.querySelector(`#nc-canvas [data-mid="${ncDragId}"]`);
+  if(el){el.style.left=it.x+'px';el.style.top=it.y+'px';}
+}
+function stopMcDrag(){
+  document.removeEventListener('mousemove',onMcDrag);
+  document.removeEventListener('mouseup',stopMcDrag);
+  if(ncDragId){
+    document.querySelectorAll('#nc-canvas .dragging').forEach(el=>el.classList.remove('dragging'));
+    saveNcData();
+  }
+  ncDragId=null;
+}
+
+function ncCoords(cx,cy){
+  const r=document.getElementById('nc-canvas-area').getBoundingClientRect();
+  return {x:(cx-r.left-ncPan.x)/ncZoom, y:(cy-r.top-ncPan.y)/ncZoom};
+}
+
+/* Add items */
+function _mcCenter(){
+  const r=document.getElementById('nc-canvas-area').getBoundingClientRect();
+  return {x:(r.width/2-ncPan.x)/ncZoom,y:(r.height/2-ncPan.y)/ncZoom};
+}
+
+function addMcText(){
+  const p=_mcCenter();
+  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'text',x:p.x-60,y:p.y-20,text:''});
+  saveNcData();renderNodeCanvas();
+}
+function addMcSticky(){
+  const p=_mcCenter();
+  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'sticky',x:p.x-90,y:p.y-60,text:'',color:'yellow'});
+  saveNcData();renderNodeCanvas();
+}
+function addMcShape(shape){
+  const p=_mcCenter();
+  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'shape',x:p.x-60,y:p.y-40,shape});
+  saveNcData();renderNodeCanvas();
+}
+function addMcSubbox(){
+  const p=_mcCenter();
+  ensureNcData(ncOpenId).push({id:'mc'+Date.now(),type:'subbox',x:p.x-90,y:p.y-30,title:'',body:''});
+  saveNcData();renderNodeCanvas();
+}
+
+function saveMcText(mid,text){
+  const it=ensureNcData(ncOpenId).find(i=>i.id===mid);
+  if(it)it.text=text;
+  saveNcData();
+}
+function saveMcSubbox(mid,field,val){
+  const it=ensureNcData(ncOpenId).find(i=>i.id===mid);
+  if(it)it[field]=val;
+  saveNcData();
+}
+function setMcStickyColor(mid,color,e){
+  e.stopPropagation();
+  const it=ensureNcData(ncOpenId).find(i=>i.id===mid);
+  if(!it)return;
+  it.color=color;
+  saveNcData();
+  const el=document.querySelector(`#nc-canvas [data-mid="${mid}"]`);
+  if(el)el.style.background=MC_STICKY_BG[color]||MC_STICKY_BG.yellow;
+}
+function deleteMcItem(mid,e){
+  e.stopPropagation();
+  ncData[ncOpenId]=ncData[ncOpenId].filter(i=>i.id!==mid);
+  saveNcData();renderNodeCanvas();
+}
+
+/* Pan/zoom for mini canvas */
+function initNodeCanvas(){
+  const area=document.getElementById('nc-canvas-area');
+  if(!area)return;
+  area.addEventListener('mousedown',e=>{
+    if(e.target!==area&&e.target.id!=='nc-canvas')return;
+    ncPanning=true;area.classList.add('panning');
+    ncPanStart={x:e.clientX,y:e.clientY};ncPanOrigin={x:ncPan.x,y:ncPan.y};
+    document.addEventListener('mousemove',onNcPan);
+    document.addEventListener('mouseup',stopNcPan);
+  });
+  area.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const r=area.getBoundingClientRect();
+    const mx=e.clientX-r.left,my=e.clientY-r.top;
+    const nz=Math.min(Math.max(ncZoom*(e.deltaY<0?1.1:0.9),0.3),3);
+    ncPan.x=mx-(mx-ncPan.x)*(nz/ncZoom);ncPan.y=my-(my-ncPan.y)*(nz/ncZoom);
+    ncZoom=nz;updateNcTransform();
+  },{passive:false});
+}
+function onNcPan(e){
+  if(!ncPanning)return;
+  ncPan.x=ncPanOrigin.x+(e.clientX-ncPanStart.x);
+  ncPan.y=ncPanOrigin.y+(e.clientY-ncPanStart.y);
+  updateNcTransform();
+}
+function stopNcPan(){
+  ncPanning=false;
+  document.getElementById('nc-canvas-area').classList.remove('panning');
+  document.removeEventListener('mousemove',onNcPan);
+  document.removeEventListener('mouseup',stopNcPan);
+}
+
+// Escape to close
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&expandNodeId)closeExpand();
+  if(e.key==='Escape'&&ncOpenId)closeNodeCanvas();
 });
 
 /* ══════════════════════════════════════════════
@@ -2820,6 +3078,8 @@ initTeamCanvas();
 loadProjects();
 initProjectsCanvas();
 loadKanban();
+loadNcData();
+initNodeCanvas();
 
 // Restore last view mode
 const _vm=localStorage.getItem('kd-view-mode');
